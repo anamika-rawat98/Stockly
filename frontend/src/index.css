@@ -1,0 +1,13 @@
+@import "tailwindcss";
+
+@layer theme, base, components, utilities;
+
+@layer base {
+  body {
+    font-family: "Inter", sans-serif !important;
+    background-color: #f8efef !important;
+    background-image: url(/images/bg.jpg);
+    background-size: cover;
+    background-position: center;
+  }
+}
