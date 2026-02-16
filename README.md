@@ -21,7 +21,9 @@ This project implements a complete authentication flow including user registrati
 - Persistent Login (localStorage)
 - Global State Management with Redux Toolkit
 - Thunk As A middleware
-- Modern UI built with Mantine
+- Modern UI built with Mantine and Mantine notifications.
+- Modern UI API Error Handling.
+-
 
 ---
 

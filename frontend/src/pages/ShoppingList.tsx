@@ -12,221 +12,308 @@ import {
   Modal,
   NumberInput,
   Stack,
-  Checkbox,
-  Select,
   ThemeIcon,
   Progress,
+  Loader,
+  Alert,
 } from "@mantine/core";
 import Layout from "../components/Layout";
+import { useForm } from "@mantine/form";
 import { useDisclosure } from "@mantine/hooks";
+import { DateInput, type DateValue } from "@mantine/dates";
+import { notifications } from "@mantine/notifications";
 import {
   IconPlus,
   IconTrash,
   IconShoppingCart,
   IconCheck,
   IconAlertTriangle,
-  IconPackage,
-  IconRefresh,
+  IconAlertCircle,
+  IconEdit,
 } from "@tabler/icons-react";
-import { useState } from "react";
-
-type ShoppingItem = {
-  id: number;
-  name: string;
-  quantity: number;
-  unit: string;
-  category: string;
-  isPurchased: boolean;
-  isAutoAdded: boolean; // came from low stock in inventory
-};
-
-// These would come from inventory low stock items in real app
-const autoAddedItems: ShoppingItem[] = [
-  {
-    id: 1,
-    name: "Olive Oil",
-    quantity: 2,
-    unit: "bottle",
-    category: "Oils",
-    isPurchased: false,
-    isAutoAdded: true,
-  },
-  {
-    id: 2,
-    name: "Almond Milk",
-    quantity: 3,
-    unit: "cartons",
-    category: "Dairy Alt",
-    isPurchased: false,
-    isAutoAdded: true,
-  },
-  {
-    id: 3,
-    name: "Whole Wheat Pasta",
-    quantity: 2,
-    unit: "packs",
-    category: "Grains",
-    isPurchased: false,
-    isAutoAdded: true,
-  },
-];
-
-const manualItems: ShoppingItem[] = [
-  {
-    id: 4,
-    name: "Greek Yogurt",
-    quantity: 2,
-    unit: "cups",
-    category: "Dairy",
-    isPurchased: false,
-    isAutoAdded: false,
-  },
-  {
-    id: 5,
-    name: "Bananas",
-    quantity: 6,
-    unit: "pcs",
-    category: "Fruits",
-    isPurchased: true,
-    isAutoAdded: false,
-  },
-];
-
-const CATEGORIES = [
-  "Grains",
-  "Legumes",
-  "Canned",
-  "Oils",
-  "Condiments",
-  "Dairy Alt",
-  "Dairy",
-  "Fruits",
-  "Vegetables",
-  "Snacks",
-  "Beverages",
-  "Other",
-];
+import { useState, useEffect } from "react";
+import { useAppDispatch, useAppSelector } from "../store/hooks";
+import {
+  getShoppingThunk,
+  addShoppingThunk,
+  updateShoppingThunk,
+  purchaseShoppingThunk,
+  deleteShoppingThunk,
+} from "../store/thunks/shoppingThunk";
+import type { ShoppingResponseData } from "../types/types";
+import { clearError } from "../store/slice/shoppingSlice";
 
 export default function ShoppingList() {
-  const [items, setItems] = useState<ShoppingItem[]>([
-    ...autoAddedItems,
-    ...manualItems,
-  ]);
-  const [modalOpened, { open, close }] = useDisclosure(false);
-  const [form, setForm] = useState({
-    name: "",
-    quantity: 1,
-    unit: "",
-    category: "Other",
+  const dispatch = useAppDispatch();
+  const { items, isLoading, error } = useAppSelector((state) => state.shopping);
+
+  const [addModalOpened, { open: openAdd, close: closeAdd }] =
+    useDisclosure(false);
+  const [editModalOpened, { open: openEdit, close: closeEdit }] =
+    useDisclosure(false);
+  const [purchaseModalOpened, { open: openPurchase, close: closePurchase }] =
+    useDisclosure(false);
+
+  const [selectedItem, setSelectedItem] = useState<ShoppingResponseData | null>(
+    null,
+  );
+  const [expiryDate, setExpiryDate] = useState<DateValue>(null);
+
+  const addForm = useForm({
+    initialValues: { name: "", quantity: 1, unit: "" },
+    // ✅ clears API error when user starts typing
+    onValuesChange: () => {
+      if (error) dispatch(clearError());
+    },
+    validate: {
+      name: (value) => {
+        if (!value.trim()) return "Item name is required";
+        if (value.trim().length < 2)
+          return "Name must be at least 2 characters";
+        if (/\d/.test(value)) return "Name cannot contain numbers";
+        return null;
+      },
+      unit: (value) => {
+        if (!value.trim()) return "Unit is required (e.g. kg, cans)";
+        if (/\d/.test(value)) return "Unit cannot contain numbers";
+        return null;
+      },
+      quantity: (value) => {
+        if (!value || value < 1) return "Quantity must be at least 1";
+        return null;
+      },
+    },
   });
 
-  const pending = items.filter((i) => !i.isPurchased);
-  const purchased = items.filter((i) => i.isPurchased);
-  const progress =
-    items.length > 0 ? Math.round((purchased.length / items.length) * 100) : 0;
-
-  const handleToggle = (id: number) => {
-    setItems((prev) =>
-      prev.map((i) =>
-        i.id === id ? { ...i, isPurchased: !i.isPurchased } : i,
-      ),
-    );
-  };
-
-  const handleDelete = (id: number) => {
-    setItems((prev) => prev.filter((i) => i.id !== id));
-  };
-
-  const handleAdd = () => {
-    if (!form.name.trim()) return;
-    setItems((prev) => [
-      ...prev,
-      {
-        id: Date.now(),
-        ...form,
-        quantity: Number(form.quantity) || 1,
-        isPurchased: false,
-        isAutoAdded: false,
+  // ─── Edit Form ────────────────────────────────────────────
+  const editForm = useForm({
+    initialValues: { name: "", quantity: 1, unit: "" },
+    // ✅ clears API error when user starts typing
+    onValuesChange: () => {
+      if (error) dispatch(clearError());
+    },
+    validate: {
+      name: (value) => {
+        if (!value.trim()) return "Item name is required";
+        if (value.trim().length < 2)
+          return "Name must be at least 2 characters";
+        if (/\d/.test(value)) return "Name cannot contain numbers";
+        return null;
       },
-    ]);
-    setForm({ name: "", quantity: 1, unit: "", category: "Other" });
-    close();
+      unit: (value) => {
+        if (!value.trim()) return "Unit is required (e.g. kg, cans)";
+        if (/\d/.test(value)) return "Unit cannot contain numbers";
+        return null;
+      },
+      quantity: (value) => {
+        if (!value || value < 1) return "Quantity must be at least 1";
+        return null;
+      },
+    },
+  });
+
+  useEffect(() => {
+    dispatch(getShoppingThunk());
+  }, [dispatch]);
+
+  // ─── Add Item ─────────────────────────────────────────────
+  const handleAdd = async () => {
+    const validation = addForm.validate();
+    if (validation.hasErrors) return;
+
+    const result = await dispatch(
+      addShoppingThunk({
+        name: addForm.values.name.trim(),
+        quantity: Number(addForm.values.quantity),
+        unit: addForm.values.unit.trim(),
+      }),
+    );
+    // ✅ only close on success — stays open on API error
+    if (addShoppingThunk.fulfilled.match(result)) {
+      notifications.show({
+        title: "Item Added",
+        message: `${addForm.values.name} added to shopping list!`,
+        color: "green",
+        icon: <IconCheck size={16} />,
+      });
+      addForm.reset();
+      closeAdd();
+    }
   };
 
-  const handleClearPurchased = () => {
-    setItems((prev) => prev.filter((i) => !i.isPurchased));
+  const handleCloseAdd = () => {
+    if (error) dispatch(clearError());
+    addForm.reset();
+    closeAdd();
   };
 
-  const ItemRow = ({ item }: { item: ShoppingItem }) => (
+  // ─── Edit Item ────────────────────────────────────────────
+  const handleEditClick = (item: ShoppingResponseData) => {
+    setSelectedItem(item);
+    editForm.setValues({
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+    });
+    if (error) dispatch(clearError());
+    openEdit();
+  };
+
+  const handleEditSave = async () => {
+    const validation = editForm.validate();
+    if (validation.hasErrors) return;
+    if (!selectedItem) return;
+
+    const result = await dispatch(
+      updateShoppingThunk({
+        id: selectedItem._id,
+        data: {
+          name: editForm.values.name.trim(),
+          quantity: Number(editForm.values.quantity),
+          unit: editForm.values.unit.trim(),
+        },
+      }),
+    );
+    // ✅ only close on success — stays open on API error
+    if (updateShoppingThunk.fulfilled.match(result)) {
+      notifications.show({
+        title: "Item Updated",
+        message: `${editForm.values.name} updated successfully!`,
+        color: "blue",
+        icon: <IconCheck size={16} />,
+      });
+      editForm.reset();
+      closeEdit();
+    }
+  };
+
+  const handleCloseEdit = () => {
+    if (error) dispatch(clearError());
+    editForm.reset();
+    closeEdit();
+  };
+
+  // ─── Purchase ─────────────────────────────────────────────
+  const handlePurchaseClick = (item: ShoppingResponseData) => {
+    setSelectedItem(item);
+    setExpiryDate(null);
+    openPurchase();
+  };
+
+  const handleConfirmPurchase = async () => {
+    if (!selectedItem) return;
+
+    let parsedExpiry: string | undefined = undefined;
+
+    if (expiryDate) {
+      parsedExpiry = new Date(expiryDate).toISOString();
+    }
+
+    const result = await dispatch(
+      purchaseShoppingThunk({
+        id: selectedItem._id,
+        data: {
+          expiryDate: parsedExpiry,
+          ismoving: true,
+        },
+      }),
+    );
+    if (purchaseShoppingThunk.fulfilled.match(result)) {
+      notifications.show({
+        title: "Added to Pantry!",
+        message: `${selectedItem.name} moved to your inventory`,
+        color: "green",
+        icon: <IconCheck size={16} />,
+      });
+      closePurchase();
+      setSelectedItem(null);
+    }
+  };
+
+  // ─── Delete ───────────────────────────────────────────────
+  const handleDelete = async (item: ShoppingResponseData) => {
+    const result = await dispatch(deleteShoppingThunk(item._id));
+    if (deleteShoppingThunk.fulfilled.match(result)) {
+      notifications.show({
+        title: "Item Removed",
+        message: `${item.name} removed from shopping list`,
+        color: "red",
+        icon: <IconTrash size={16} />,
+      });
+    }
+  };
+
+  const autoAdded = items.filter((i) => i.isAutoAdded);
+  const manual = items.filter((i) => !i.isAutoAdded);
+
+  // ─── Item Row ─────────────────────────────────────────────
+  const ItemRow = ({ item }: { item: ShoppingResponseData }) => (
     <div
       className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
-        item.isPurchased
-          ? "bg-gray-50 border-gray-200 opacity-60"
-          : item.isAutoAdded
-            ? "bg-orange-50 border-orange-200"
-            : "bg-white border-gray-200"
+        item.isAutoAdded
+          ? "bg-orange-50 border-orange-200"
+          : "bg-white border-gray-200"
       }`}
     >
-      <Group gap="sm" className="flex-1">
-        <Checkbox
-          checked={item.isPurchased}
-          onChange={() => handleToggle(item.id)}
+      <Tooltip
+        label="Mark as Purchased → Add to Pantry"
+        withArrow
+        position="left"
+      >
+        <ActionIcon
+          variant="filled"
           color="green"
+          size="lg"
           radius="xl"
-        />
-        <div className="flex-1">
-          <Group gap="xs" align="center">
-            <Text
-              fw={500}
-              size="sm"
-              className={
-                item.isPurchased
-                  ? "line-through text-gray-400"
-                  : "text-gray-800"
-              }
-            >
-              {item.name}
-            </Text>
-            {item.isAutoAdded && !item.isPurchased && (
-              <Tooltip label="Auto-added from low stock">
-                <Badge
-                  color="orange"
-                  variant="light"
-                  size="xs"
-                  leftSection={<IconAlertTriangle size={10} />}
-                >
-                  Low Stock
-                </Badge>
-              </Tooltip>
-            )}
-          </Group>
-          <Text size="xs" className="text-gray-400">
-            {item.quantity} {item.unit} · {item.category}
+          className="shadow-sm hover:scale-110 transition-transform"
+          onClick={() => handlePurchaseClick(item)}
+        >
+          <IconCheck size={18} stroke={2.5} />
+        </ActionIcon>
+      </Tooltip>
+
+      <div className="flex-1 px-3">
+        <Group gap="xs" align="center">
+          <Text fw={500} size="sm" className="text-gray-800">
+            {item.name}
           </Text>
-        </div>
-      </Group>
+          {item.isAutoAdded && (
+            <Tooltip label="Added from low stock inventory">
+              <Badge
+                color="orange"
+                variant="light"
+                size="xs"
+                leftSection={<IconAlertTriangle size={10} />}
+              >
+                Low Stock
+              </Badge>
+            </Tooltip>
+          )}
+        </Group>
+        <Text size="xs" className="text-gray-400">
+          {item.quantity} {item.unit}
+        </Text>
+      </div>
 
       <Group gap="xs">
-        {item.isPurchased && (
-          <Tooltip label="Mark as not purchased">
-            <ActionIcon
-              variant="light"
-              color="gray"
-              size="sm"
-              onClick={() => handleToggle(item.id)}
-            >
-              <IconRefresh size={14} />
-            </ActionIcon>
-          </Tooltip>
-        )}
+        <Tooltip label="Edit">
+          <ActionIcon
+            variant="light"
+            color="blue"
+            size="md"
+            onClick={() => handleEditClick(item)}
+          >
+            <IconEdit size={16} />
+          </ActionIcon>
+        </Tooltip>
         <Tooltip label="Remove">
           <ActionIcon
             variant="light"
             color="red"
-            size="sm"
-            onClick={() => handleDelete(item.id)}
+            size="md"
+            onClick={() => handleDelete(item)}
           >
-            <IconTrash size={14} />
+            <IconTrash size={16} />
           </ActionIcon>
         </Tooltip>
       </Group>
@@ -236,55 +323,39 @@ export default function ShoppingList() {
   return (
     <Layout>
       <Container size="md" className="py-8">
-        {/* Page Title */}
-        <div className="my-10 text-center">
-          <Title order={1} className="text-3xl font-bold text-gray-900">
-            Shopping List
-          </Title>
-          <Text className="text-gray-500 mt-1">
-            Items to buy — low stock items are added automatically
+        <div className="mb-8 mt-4 text-center">
+          <Group justify="center" gap="xs" mb={4}>
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <IconShoppingCart size={20} className="text-blue-600" />
+            </div>
+            <Title order={1} className="text-2xl font-extrabold">
+              Shopping List
+            </Title>
+          </Group>
+          <Text className="text-gray-500 text-sm font-medium">
+            Row stock items are added automatically
           </Text>
         </div>
 
-        {/* Progress Card */}
-        <Card
-          shadow="xs"
-          radius="md"
-          className="border border-gray-200 mb-6 bg-white/40! backdrop-blur-lg!"
-        >
-          <Group justify="space-between" mb="xs">
-            <Group gap="sm">
-              <ThemeIcon color="green" size="md">
-                <IconShoppingCart size={16} />
-              </ThemeIcon>
-              <div>
-                <Text fw={600} size="sm" className="text-gray-800">
-                  {purchased.length} of {items.length} items purchased
-                </Text>
-                <Text size="xs" className="text-gray-400">
-                  {pending.length} remaining
-                </Text>
-              </div>
-            </Group>
-            {progress === 100 && (
-              <Badge
-                color="green"
-                variant="light"
-                leftSection={<IconCheck size={12} />}
-              >
-                All done!
-              </Badge>
-            )}
-          </Group>
-          <Progress value={progress} color="green" radius="xl" size="md" />
-        </Card>
+        {/* Global Error Alert — only when no modal is open */}
+        {error && !addModalOpened && !editModalOpened && (
+          <Alert
+            icon={<IconAlertCircle size={16} />}
+            color="red"
+            variant="filled"
+            p="xs"
+            className="mb-6"
+          >
+            {error}
+          </Alert>
+        )}
 
         {/* Stats Row */}
         <div className="grid grid-cols-3 gap-3 mb-6">
           <Card
             shadow="xs"
             radius="md"
-            className="border border-gray-200 text-center bg-white/40! backdrop-blur-lg!"
+            className="border border-gray-200 text-center bg-white/80! backdrop-blur-lg!"
           >
             <Text size="xl" fw={700} className="text-gray-900">
               {items.length}
@@ -296,10 +367,10 @@ export default function ShoppingList() {
           <Card
             shadow="xs"
             radius="md"
-            className="border border-orange-200 text-center bg-white/40! backdrop-blur-lg!"
+            className="border border-orange-200 text-center bg-white/80! backdrop-blur-lg!"
           >
             <Text size="xl" fw={700} className="text-orange-700">
-              {items.filter((i) => i.isAutoAdded && !i.isPurchased).length}
+              {autoAdded.length}
             </Text>
             <Text size="xs" className="text-orange-500">
               Low Stock
@@ -308,94 +379,80 @@ export default function ShoppingList() {
           <Card
             shadow="xs"
             radius="md"
-            className="border border-green-200 text-center bg-white/40! backdrop-blur-lg!"
+            className="border border-blue-200 text-center bg-white/80! backdrop-blur-lg!"
           >
-            <Text size="xl" fw={700} className="text-green-700">
-              {purchased.length}
+            <Text size="xl" fw={700} className="text-blue-700">
+              {manual.length}
             </Text>
-            <Text size="xs" className="text-green-500">
-              Purchased
+            <Text size="xs" className="text-blue-500">
+              Manual
             </Text>
           </Card>
         </div>
 
         {/* Action Bar */}
-        <Group justify="space-between" className="mb-4">
-          <Text fw={600} className="text-gray-700">
-            {pending.length > 0
-              ? `${pending.length} items to buy`
-              : "Nothing left to buy 🎉"}
-          </Text>
-          <Group gap="sm">
-            {purchased.length > 0 && (
-              <Button
-                variant="subtle"
-                color="white"
-                leftSection={<IconTrash size={18} />}
-                onClick={handleClearPurchased}
-              >
-                Clear purchased
-              </Button>
-            )}
-            <Button
-              color="black"
-              size="md"
-              leftSection={<IconPlus size={14} />}
-              onClick={open}
-            >
-              Add Item
-            </Button>
-          </Group>
+        <Group justify="flex-end" className="mb-4">
+          <Button
+            color="dark"
+            size="md"
+            leftSection={<IconPlus size={14} />}
+            onClick={() => {
+              addForm.reset();
+              if (error) dispatch(clearError());
+              openAdd();
+            }}
+          >
+            Add Item
+          </Button>
         </Group>
 
-        {/* Pending Items */}
-        {pending.length > 0 && (
+        {/* Loading */}
+        {isLoading && (
+          <div className="flex justify-center py-12">
+            <Loader color="dark" />
+          </div>
+        )}
+
+        {/* Low Stock Items */}
+        {!isLoading && autoAdded.length > 0 && (
           <Card
             shadow="xs"
             radius="md"
-            className="border border-gray-200 bg-white/40! backdrop-blur-lg! mb-10!"
+            className="border border-orange-200 bg-white/40! backdrop-blur-lg! mb-4!"
           >
             <Group mb="md">
-              <ThemeIcon color="blue" variant="light" size="sm">
-                <IconPackage size={14} />
+              <ThemeIcon color="orange" variant="light" size="sm">
+                <IconAlertTriangle size={14} />
               </ThemeIcon>
-              <Text fw={600} size="sm" className="text-gray-700">
-                To Buy
+              <Text fw={600} size="sm" className="text-orange-700">
+                From Inventory (Low Stock / Expired)
               </Text>
             </Group>
             <Stack gap="xs">
-              {pending.map((item) => (
-                <ItemRow key={item.id} item={item} />
+              {autoAdded.map((item) => (
+                <ItemRow key={item._id} item={item} />
               ))}
             </Stack>
           </Card>
         )}
 
-        {/* Purchased Items */}
-        {purchased.length > 0 && (
+        {/* Manual Items */}
+        {!isLoading && manual.length > 0 && (
           <Card
             shadow="xs"
             radius="md"
             className="border border-gray-200 bg-white/40! backdrop-blur-lg! mb-10!"
           >
-            <Group mb="md">
-              <ThemeIcon color="green" variant="light" size="sm">
-                <IconCheck size={14} />
-              </ThemeIcon>
-              <Text fw={600} size="sm" className="text-gray-700">
-                Purchased
-              </Text>
-            </Group>
             <Stack gap="xs">
-              {purchased.map((item) => (
-                <ItemRow key={item.id} item={item} />
+              {manual.map((item) => (
+                <ItemRow key={item._id} item={item} />
               ))}
             </Stack>
           </Card>
         )}
 
         {/* Empty State */}
-        {items.length === 0 && (
+        {!isLoading && items.length === 0 && (
           <Card
             shadow="xs"
             radius="md"
@@ -413,64 +470,175 @@ export default function ShoppingList() {
               low
             </Text>
             <Button
-              color="green"
+              color="dark"
               leftSection={<IconPlus size={14} />}
-              onClick={open}
+              onClick={() => {
+                addForm.reset();
+                if (error) dispatch(clearError());
+                openAdd();
+              }}
             >
               Add First Item
             </Button>
           </Card>
         )}
       </Container>
-      {/* Add Item Modal */}
+
+      {/* ─── Add Modal ─────────────────────────────────────── */}
       <Modal
-        opened={modalOpened}
-        onClose={close}
-        title={<Title order={4}>Add to Shopping List</Title>}
+        opened={addModalOpened}
+        onClose={handleCloseAdd}
+        title={
+          <Text fw={600} size="lg">
+            Add to Shopping List
+          </Text>
+        }
         centered
         size="sm"
+        overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}
       >
         <Stack gap="sm">
+          {/* ✅ API error inside modal — clears on typing */}
+          {error && (
+            <Alert
+              icon={<IconAlertCircle size={16} />}
+              color="red"
+              variant="filled"
+              p="xs"
+            >
+              {error}
+            </Alert>
+          )}
           <TextInput
             label="Item Name"
             placeholder="e.g. Olive Oil"
-            value={form.name}
-            onChange={(e) => setForm({ ...form, name: e.target.value })}
+            {...addForm.getInputProps("name")}
             required
           />
           <Group grow>
             <NumberInput
               label="Quantity"
               min={1}
-              value={form.quantity}
-              onChange={(val) =>
-                setForm({ ...form, quantity: Number(val) || 1 })
-              }
+              {...addForm.getInputProps("quantity")}
             />
             <TextInput
               label="Unit"
               placeholder="e.g. kg, cans"
-              value={form.unit}
-              onChange={(e) => setForm({ ...form, unit: e.target.value })}
+              {...addForm.getInputProps("unit")}
+              required
             />
           </Group>
-          <Select
-            label="Category"
-            data={CATEGORIES}
-            value={form.category}
-            onChange={(val) => setForm({ ...form, category: val || "Other" })}
+          <Group justify="flex-end" mt="md">
+            <Button variant="subtle" color="gray" onClick={handleCloseAdd}>
+              Cancel
+            </Button>
+            <Button
+              color="dark"
+              leftSection={<IconCheck size={16} />}
+              onClick={handleAdd}
+              loading={isLoading}
+            >
+              Add to List
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* ─── Edit Modal ────────────────────────────────────── */}
+      <Modal
+        opened={editModalOpened}
+        onClose={handleCloseEdit}
+        title={
+          <Text fw={600} size="lg">
+            Edit Item
+          </Text>
+        }
+        centered
+        size="sm"
+        overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}
+      >
+        <Stack gap="sm">
+          {/* ✅ API error inside modal — clears on typing */}
+          {error && (
+            <Alert
+              icon={<IconAlertCircle size={16} />}
+              color="red"
+              variant="filled"
+              p="xs"
+            >
+              {error}
+            </Alert>
+          )}
+          <TextInput
+            label="Item Name"
+            placeholder="e.g. Olive Oil"
+            {...editForm.getInputProps("name")}
+            required
+          />
+          <Group grow>
+            <NumberInput
+              label="Quantity"
+              min={1}
+              {...editForm.getInputProps("quantity")}
+            />
+            <TextInput
+              label="Unit"
+              placeholder="e.g. kg, cans"
+              {...editForm.getInputProps("unit")}
+              required
+            />
+          </Group>
+          <Group justify="flex-end" mt="md">
+            <Button variant="subtle" color="gray" onClick={handleCloseEdit}>
+              Cancel
+            </Button>
+            <Button
+              color="blue"
+              leftSection={<IconCheck size={16} />}
+              onClick={handleEditSave}
+              loading={isLoading}
+            >
+              Save Changes
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
+      {/* ─── Purchase Modal ────────────────────────────────── */}
+      <Modal
+        opened={purchaseModalOpened}
+        onClose={closePurchase}
+        title={
+          <Text fw={600} size="lg">
+            Add to Pantry
+          </Text>
+        }
+        centered
+        size="sm"
+        overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}
+      >
+        <Stack gap="sm">
+          <Text size="sm" className="text-gray-600">
+            You're adding <strong>{selectedItem?.name}</strong> back to your
+            pantry. Enter the expiry date if you know it!
+          </Text>
+          <DateInput
+            label="Expiry Date"
+            placeholder="Pick a date (Optional)"
+            value={expiryDate}
+            onChange={setExpiryDate}
           />
           <Group justify="flex-end" mt="md">
-            <Button variant="subtle" color="gray" onClick={close}>
+            <Button variant="subtle" color="gray" onClick={closePurchase}>
               Cancel
             </Button>
             <Button
               color="green"
-              leftSection={<IconCheck size={16} />}
-              onClick={handleAdd}
-              disabled={!form.name.trim()}
+              leftSection={<IconCheck size={14} />}
+              onClick={handleConfirmPurchase}
+              loading={isLoading}
             >
-              Add to List
+              Add to Pantry
             </Button>
           </Group>
         </Stack>

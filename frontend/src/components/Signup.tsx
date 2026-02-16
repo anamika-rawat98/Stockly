@@ -1,4 +1,3 @@
-import { useState } from "react";
 import {
   TextInput,
   PasswordInput,
@@ -6,49 +5,68 @@ import {
   Paper,
   Text,
   Divider,
+  Alert,
 } from "@mantine/core";
+import { useForm } from "@mantine/form"; // ← add this
 import { useNavigate } from "react-router-dom";
 import Layout from "./Layout";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { registerThunk } from "../store/thunks/userThunk";
-
-interface SignupFormData {
-  name: string;
-  email: string;
-  password: string;
-  confirmPassword: string;
-}
+import { clearError } from "../store/slice/userSlice";
+import { IconAlertCircle } from "@tabler/icons-react";
 
 export default function Signup() {
   const navigate = useNavigate();
   const dispatch = useAppDispatch();
-  const [formData, setFormData] = useState<SignupFormData>({
-    name: "",
-    email: "",
-    password: "",
-    confirmPassword: "",
+  const { isLoading, error } = useAppSelector((state) => state.user);
+
+  const form = useForm({
+    initialValues: {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+    },
+    validate: {
+      name: (value) => {
+        if (!value.trim()) return "Full name is required";
+        if (value.trim().length < 2)
+          return "Name must be at least 2 characters";
+        if (!/^[a-zA-Z\s'-]+$/.test(value))
+          return "Name can only contain letters, spaces, hyphens, and apostrophes";
+        return null;
+      },
+      email: (value) => {
+        if (!value) return "Email is required";
+        if (!/^\S+@\S+\.\S+$/.test(value))
+          return "Please enter a valid email address";
+        return null;
+      },
+      password: (value) => {
+        if (!value) return "Password is required";
+        if (value.length < 8) return "Password must be at least 8 characters";
+        if (!/[A-Z]/.test(value))
+          return "Password must contain at least one uppercase letter";
+        if (!/[0-9]/.test(value))
+          return "Password must contain at least one number";
+        if (!/[!@#$%^&*]/.test(value))
+          return "Password must contain at least one special character (!@#$%^&*)";
+        return null;
+      },
+      confirmPassword: (value, values) => {
+        if (!value) return "Please confirm your password";
+        if (value !== values.password) return "Passwords do not match";
+        return null;
+      },
+    },
   });
 
-  const isLoading = useAppSelector((state) => state.user.isLoading);
-
-  const handleSubmit = async (e: any) => {
-    e.preventDefault();
-    // Validate passwords match
-    if (formData.password !== formData.confirmPassword) {
-      alert("Passwords do not match!");
-      return;
-    }
+  const handleSubmit = async (values: typeof form.values) => {
+    if (error) dispatch(clearError());
     try {
-      await dispatch(registerThunk(formData)).unwrap();
+      await dispatch(registerThunk(values)).unwrap();
       navigate("/inventory");
     } catch (error) {}
-  };
-
-  const handleChange = (field: keyof SignupFormData, value: string) => {
-    setFormData({
-      ...formData,
-      [field]: value,
-    });
   };
 
   return (
@@ -58,7 +76,20 @@ export default function Signup() {
           <Text size="lg" fw={500} c="black" className="text-center mb-3!">
             Create your account to get started
           </Text>
-          {/* Form Card */}
+
+          {/* Server-side error from Redux */}
+          {error && (
+            <Alert
+              icon={<IconAlertCircle size={16} />}
+              color="red"
+              variant="filled"
+              p="xs"
+              className="mb-4"
+            >
+              {error}
+            </Alert>
+          )}
+
           <Paper
             shadow="lg"
             radius="xl"
@@ -66,23 +97,16 @@ export default function Signup() {
             withBorder
             className="bg-white/40! backdrop-blur-lg!"
           >
-            <form onSubmit={handleSubmit}>
+            <form onSubmit={form.onSubmit(handleSubmit)}>
+              {" "}
+              {/* ← use form.onSubmit */}
               <div className="space-y-4">
                 <TextInput
                   label="Full Name"
                   placeholder="Enter your name"
                   size="md"
-                  value={formData.name}
-                  onChange={(e) => handleChange("name", e.target.value)}
-                  required
-                  styles={{
-                    input: {
-                      borderRadius: "0.5rem",
-                      "&:focus": {
-                        borderColor: "#1E1E1E",
-                      },
-                    },
-                  }}
+                  {...form.getInputProps("name")}
+                  styles={{ input: { borderRadius: "0.5rem" } }}
                 />
 
                 <TextInput
@@ -90,70 +114,33 @@ export default function Signup() {
                   placeholder="Enter your email"
                   type="email"
                   size="md"
-                  value={formData.email}
-                  onChange={(e) => handleChange("email", e.target.value)}
-                  required
-                  styles={{
-                    input: {
-                      borderRadius: "0.5rem",
-                      "&:focus": {
-                        borderColor: "#1E1E1E",
-                      },
-                    },
-                  }}
+                  {...form.getInputProps("email")}
+                  styles={{ input: { borderRadius: "0.5rem" } }}
                 />
 
                 <PasswordInput
                   label="Password"
                   placeholder="Create a password"
                   size="md"
-                  value={formData.password}
-                  onChange={(e) => handleChange("password", e.target.value)}
-                  required
-                  styles={{
-                    input: {
-                      borderRadius: "0.5rem",
-                      "&:focus": {
-                        borderColor: "#1E1E1E",
-                      },
-                    },
-                  }}
+                  {...form.getInputProps("password")}
+                  styles={{ input: { borderRadius: "0.5rem" } }}
                 />
 
                 <PasswordInput
                   label="Confirm Password"
                   placeholder="Confirm your password"
                   size="md"
-                  value={formData.confirmPassword}
-                  onChange={(e) =>
-                    handleChange("confirmPassword", e.target.value)
-                  }
-                  required
-                  styles={{
-                    input: {
-                      borderRadius: "0.5rem",
-                      "&:focus": {
-                        borderColor: "#1E1E1E",
-                      },
-                    },
-                  }}
+                  {...form.getInputProps("confirmPassword")}
+                  styles={{ input: { borderRadius: "0.5rem" } }}
                 />
+
                 <Button
                   type="submit"
                   loading={isLoading}
                   fullWidth
                   size="md"
                   className="rounded-lg font-semibold shadow-md hover:shadow-lg transition-all transform hover:scale-[1.02] active:scale-[0.98]"
-                  style={{
-                    backgroundColor: "#1E1E1E",
-                  }}
-                  styles={{
-                    root: {
-                      "&:hover": {
-                        backgroundColor: "#2E2E2E",
-                      },
-                    },
-                  }}
+                  style={{ backgroundColor: "#1E1E1E" }}
                 >
                   Create Account
                 </Button>
@@ -190,12 +177,11 @@ export default function Signup() {
             </Button>
           </Paper>
 
-          {/* Footer Text */}
           <Text className="text-center text-sm mt-6" c="white">
             Already have an account?{" "}
             <button
               onClick={() => navigate("/login")}
-              className="font-semibold hover:underline hover: cursor-pointer!"
+              className="font-semibold hover:underline cursor-pointer!"
               style={{ color: "#1E1E1E" }}
             >
               Sign in

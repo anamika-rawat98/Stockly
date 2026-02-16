@@ -6,11 +6,14 @@ import {
   Paper,
   Text,
   Divider,
+  Alert,
 } from "@mantine/core";
 import { useNavigate } from "react-router-dom";
 import Layout from "./Layout";
 import { loginThunk } from "../store/thunks/userThunk";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
+import { IconAlertCircle } from "@tabler/icons-react";
+import { clearError } from "../store/slice/userSlice";
 
 interface LoginFormData {
   email: string;
@@ -25,7 +28,7 @@ export default function Login() {
     password: "",
   });
 
-  const isLoading = useAppSelector((state) => state.user.isLoading);
+  const { isLoading, error } = useAppSelector((state) => state.user);
 
   const handleSubmit = async (e: React.SyntheticEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -39,6 +42,7 @@ export default function Login() {
     field: keyof LoginFormData,
     value: string | boolean,
   ) => {
+    if (error) dispatch(clearError());
     setFormData({
       ...formData,
       [field]: value,
@@ -53,6 +57,17 @@ export default function Login() {
             <Text size="lg" fw={500} c="black" className="text-center mb-5!">
               Welcome back! Please login to your account
             </Text>
+            {error && (
+              <Alert
+                icon={<IconAlertCircle size={16} />}
+                color="red"
+                variant="filled"
+                p="xs"
+                className="mb-4"
+              >
+                {error}
+              </Alert>
+            )}
             <Paper
               shadow="lg"
               radius="xl"

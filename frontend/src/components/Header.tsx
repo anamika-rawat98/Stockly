@@ -68,7 +68,7 @@ function Header() {
               </button>
               <button
                 onClick={() => {
-                  const el = document.getElementById("features");
+                  const el = document.getElementById("about");
                   if (el) el.scrollIntoView({ behavior: "smooth" });
                 }}
                 className="text-white hover:text-green-600 font-medium transition-colors hover:cursor-pointer bg-transparent border-none"

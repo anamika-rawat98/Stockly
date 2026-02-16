@@ -1,5 +1,6 @@
 import { AppShell } from "@mantine/core";
 import Header from "./Header";
+
 const Layout = ({ children }: { children: React.ReactNode }) => {
   return (
     <AppShell header={{ height: 60 }}>
@@ -8,7 +9,7 @@ const Layout = ({ children }: { children: React.ReactNode }) => {
       </AppShell.Header>
       <AppShell.Main>{children}</AppShell.Main>
       <AppShell.Footer className="bg-black!">
-        <h1 className="text-center py-4 text-gray-400 ">
+        <h1 className="text-center py-4 text-gray-400">
           © 2025 Stockly. All rights reserved.
         </h1>
       </AppShell.Footer>
