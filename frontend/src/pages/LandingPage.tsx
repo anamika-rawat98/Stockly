@@ -91,7 +91,7 @@ export default function LandingPage() {
                 {/* Badge */}
                 <div className="hero-badge mb-6">
                   <span
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border border-green-200"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full text-sm font-medium border border-green-200 glass-card"
                     style={{ background: "#f0fdf4", color: "#16a34a" }}
                   >
                     <IconLeaf size={14} />
@@ -189,7 +189,7 @@ export default function LandingPage() {
                 ].map((item, i) => (
                   <div
                     key={i}
-                    className="float-card bg-white/90 backdrop-blur-md rounded-2xl p-4 shadow-lg border border-gray-100 w-64"
+                    className="float-card glass-card rounded-2xl p-4 w-64"
                   >
                     <div className="flex justify-between items-start mb-2">
                       <Text fw={600} size="sm" className="text-gray-800">
@@ -240,7 +240,7 @@ export default function LandingPage() {
               {features.map((feature, index) => (
                 <Card
                   key={index}
-                  className="feature-card border border-gray-100 bg-white/70! backdrop-blur-md! rounded-2xl!"
+                  className="feature-card glass-card border border-gray-100 rounded-2xl!"
                   shadow="xs"
                   padding="xl"
                 >
@@ -269,9 +269,9 @@ export default function LandingPage() {
         </section>
 
         {/*  ABOUT */}
-        <section id="about" className="py-8 bg-white/50! backdrop-blur-sm!">
+        <section id="about" className="py-8">
           <Container size="lg">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-16">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-16 glass-surface p-6 md:p-8">
               <div>
                 <Badge color="teal" variant="light" size="lg" className="mb-6">
                   About Stockly
@@ -383,7 +383,10 @@ export default function LandingPage() {
 
         {/*  CTA BANNER */}
         {!isAuthenticated && (
-          <section className="py-12 mb-12" style={{ background: "#111" }}>
+          <section
+            className="py-12 mb-12 rounded-t-2xl border border-white/30"
+            style={{ background: "#111" }}
+          >
             <Container size="md">
               <div className="text-center relative">
                 <div className="absolute inset-0 flex items-center justify-center opacity-5">

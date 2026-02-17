@@ -5,6 +5,7 @@ import {
   Button,
   Paper,
   Text,
+  Title,
   Divider,
   Alert,
 } from "@mantine/core";
@@ -54,9 +55,22 @@ export default function Login() {
       <div className="w-screen h-screen">
         <div className="h-full w-full flex items-center justify-center">
           <div className="w-full max-w-md">
-            <Text size="lg" fw={500} c="black" className="text-center mb-5!">
-              Welcome back! Please login to your account
-            </Text>
+            <div className="text-center mb-5">
+              <Text
+                size="xs"
+                fw={700}
+                tt="uppercase"
+                className="tracking-[0.14em] text-gray-600 mb-2"
+              >
+                Welcome Back
+              </Text>
+              <Title order={2} className="text-gray-900 mb-2">
+                Sign in to Stockly
+              </Title>
+              <Text size="sm" className="text-gray-600">
+                Pick up where you left off and manage your pantry in seconds.
+              </Text>
+            </div>
             {error && (
               <Alert
                 icon={<IconAlertCircle size={16} />}
@@ -168,15 +182,17 @@ export default function Login() {
                 Google
               </Button>
             </Paper>
-            <Text className="text-center text-sm mt-6" c="white" fw={500}>
-              Don't have an account?{" "}
-              <button
-                onClick={() => navigate("/signup")}
-                className="font-semibold hover:underline text-black hover:cursor-pointer"
-              >
-                Sign up
-              </button>
-            </Text>
+            <div className="mt-6 rounded-xl border border-white/70 bg-white/35 backdrop-blur-md px-4 py-3 text-center shadow-sm">
+              <Text size="sm" className="text-gray-700">
+                New to Stockly?
+                <button
+                  onClick={() => navigate("/signup")}
+                  className="ml-2 font-semibold text-emerald-700 hover:text-emerald-800 hover:underline hover:cursor-pointer"
+                >
+                  Create your account
+                </button>
+              </Text>
+            </div>
           </div>
         </div>
       </div>

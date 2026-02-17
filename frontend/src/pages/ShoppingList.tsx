@@ -245,13 +245,20 @@ export default function ShoppingList() {
   const autoAdded = items.filter((i) => i.isAutoAdded);
   const manual = items.filter((i) => !i.isAutoAdded);
 
+  const glassModalClassNames = {
+    content: "glass-modal-content",
+    header: "glass-modal-header",
+    title: "glass-modal-title",
+    body: "glass-modal-body",
+  };
+
   // ─── Item Row ─────────────────────────────────────────────
   const ItemRow = ({ item }: { item: ShoppingResponseData }) => (
     <div
-      className={`flex items-center justify-between p-3 rounded-lg border transition-all ${
+      className={`flex items-center justify-between p-3 rounded-lg border transition-all glass-list-row ${
         item.isAutoAdded
-          ? "bg-orange-50 border-orange-200"
-          : "bg-white border-gray-200"
+          ? "glass-list-row-warn border-orange-200"
+          : "glass-list-row-neutral border-gray-200"
       }`}
     >
       <Tooltip
@@ -354,7 +361,7 @@ export default function ShoppingList() {
           <Card
             shadow="xs"
             radius="md"
-            className="border border-gray-200 text-center bg-white/80! backdrop-blur-lg!"
+            className="glass-card border border-gray-200 text-center"
           >
             <Text size="xl" fw={700} className="text-gray-900">
               {items.length}
@@ -366,7 +373,7 @@ export default function ShoppingList() {
           <Card
             shadow="xs"
             radius="md"
-            className="border border-orange-200 text-center bg-white/80! backdrop-blur-lg!"
+            className="glass-card border border-orange-200 text-center"
           >
             <Text size="xl" fw={700} className="text-orange-700">
               {autoAdded.length}
@@ -378,7 +385,7 @@ export default function ShoppingList() {
           <Card
             shadow="xs"
             radius="md"
-            className="border border-blue-200 text-center bg-white/80! backdrop-blur-lg!"
+            className="glass-card border border-blue-200 text-center"
           >
             <Text size="xl" fw={700} className="text-blue-700">
               {manual.length}
@@ -417,7 +424,7 @@ export default function ShoppingList() {
           <Card
             shadow="xs"
             radius="md"
-            className="border border-orange-200 bg-white/40! backdrop-blur-lg! mb-4!"
+            className="glass-card border border-orange-200 mb-4!"
           >
             <Group mb="md">
               <ThemeIcon color="orange" variant="light" size="sm">
@@ -440,7 +447,7 @@ export default function ShoppingList() {
           <Card
             shadow="xs"
             radius="md"
-            className="border border-gray-200 bg-white/40! backdrop-blur-lg! mb-10!"
+            className="glass-card border border-gray-200 mb-10!"
           >
             <Stack gap="xs">
               {manual.map((item) => (
@@ -455,7 +462,7 @@ export default function ShoppingList() {
           <Card
             shadow="xs"
             radius="md"
-            className="border border-gray-200 text-center py-12 bg-white/40! backdrop-blur-lg!"
+            className="glass-card border border-gray-200 text-center py-12"
           >
             <IconShoppingCart
               size={40}
@@ -494,7 +501,8 @@ export default function ShoppingList() {
         }
         centered
         size="sm"
-        overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}
+        overlayProps={{ backgroundOpacity: 0.35, blur: 6 }}
+        classNames={glassModalClassNames}
       >
         <Stack gap="sm">
           {/* ✅ API error inside modal — clears on typing */}
@@ -554,7 +562,8 @@ export default function ShoppingList() {
         }
         centered
         size="sm"
-        overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}
+        overlayProps={{ backgroundOpacity: 0.35, blur: 6 }}
+        classNames={glassModalClassNames}
       >
         <Stack gap="sm">
           {/* ✅ API error inside modal — clears on typing */}
@@ -614,7 +623,8 @@ export default function ShoppingList() {
         }
         centered
         size="sm"
-        overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}
+        overlayProps={{ backgroundOpacity: 0.35, blur: 6 }}
+        classNames={glassModalClassNames}
       >
         <Stack gap="sm">
           <Text size="sm" className="text-gray-600">

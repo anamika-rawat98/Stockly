@@ -407,6 +407,13 @@ export default function Inventory() {
         ? "#ea580c"
         : "#16a34a";
 
+  const glassModalClassNames = {
+    content: "glass-modal-content",
+    header: "glass-modal-header",
+    title: "glass-modal-title",
+    body: "glass-modal-body",
+  };
+
   return (
     <Layout>
       <Container size="xl" className="py-8">
@@ -441,7 +448,7 @@ export default function Inventory() {
           <Card
             shadow="xs"
             radius="md"
-            className="border border-gray-200 bg-white/90! backdrop-blur-lg!"
+            className="glass-card border border-gray-200"
           >
             <Group>
               <div className="p-3 rounded-lg">
@@ -460,7 +467,7 @@ export default function Inventory() {
           <Card
             shadow="xs"
             radius="md"
-            className="border border-orange-200 bg-white/80! backdrop-blur-lg!"
+            className="glass-card border border-orange-200"
           >
             <Group>
               <div className="p-3 rounded-lg">
@@ -479,7 +486,7 @@ export default function Inventory() {
           <Card
             shadow="xs"
             radius="md"
-            className="border border-red-200 bg-white/80! backdrop-blur-lg!"
+            className="glass-card border border-red-200"
           >
             <Group>
               <div className="p-3 rounded-lg">
@@ -501,7 +508,7 @@ export default function Inventory() {
         <Card
           shadow="xs"
           radius="md"
-          className="border border-gray-200 mb-6 bg-white/80! backdrop-blur-lg!"
+          className="glass-card border border-gray-200 mb-6"
         >
           <Group justify="space-between" wrap="wrap" gap="sm">
             <TextInput
@@ -539,11 +546,11 @@ export default function Inventory() {
           <Card
             shadow="xs"
             radius="md"
-            className="border border-gray-200 overflow-x-auto bg-white/90! backdrop-blur-xl! mb-20!"
+            className="glass-table-wrap border border-gray-200 overflow-x-auto mb-20!"
           >
             <Table verticalSpacing="md">
               <Table.Thead>
-                <Table.Tr className="bg-gray-50">
+                <Table.Tr className="glass-table-head">
                   <Table.Th className="text-gray-600 font-semibold">
                     Name
                   </Table.Th>
@@ -725,7 +732,8 @@ export default function Inventory() {
             Update Quantity
           </Text>
         }
-        overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}
+        overlayProps={{ backgroundOpacity: 0.35, blur: 6 }}
+        classNames={glassModalClassNames}
         centered
         size="xs"
       >
@@ -804,7 +812,8 @@ export default function Inventory() {
             {editItem ? "Edit Item Details" : "Add New Item"}
           </Text>
         }
-        overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}
+        overlayProps={{ backgroundOpacity: 0.35, blur: 6 }}
+        classNames={glassModalClassNames}
         centered
         size="md"
       >
@@ -911,7 +920,8 @@ export default function Inventory() {
             Add to Shopping List
           </Text>
         }
-        overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}
+        overlayProps={{ backgroundOpacity: 0.35, blur: 6 }}
+        classNames={glassModalClassNames}
         centered
         size="sm"
       >

@@ -4,6 +4,7 @@ import {
   Button,
   Paper,
   Text,
+  Title,
   Divider,
   Alert,
 } from "@mantine/core";
@@ -73,9 +74,23 @@ export default function Signup() {
     <Layout>
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="w-full max-w-md my-10 mb-20">
-          <Text size="lg" fw={500} c="black" className="text-center mb-3!">
-            Create your account to get started
-          </Text>
+          <div className="text-center mb-3">
+            <Text
+              size="xs"
+              fw={700}
+              tt="uppercase"
+              className="tracking-[0.14em] text-gray-600 mb-2"
+            >
+              Get Started
+            </Text>
+            <Title order={2} className="text-gray-900 mb-2">
+              Create your Stockly account
+            </Title>
+            <Text size="sm" className="text-gray-600">
+              Set up your pantry space once, then keep everything organized
+              every day.
+            </Text>
+          </div>
 
           {/* Server-side error from Redux */}
           {error && (
@@ -177,16 +192,17 @@ export default function Signup() {
             </Button>
           </Paper>
 
-          <Text className="text-center text-sm mt-6" c="white">
-            Already have an account?{" "}
-            <button
-              onClick={() => navigate("/login")}
-              className="font-semibold hover:underline cursor-pointer!"
-              style={{ color: "#1E1E1E" }}
-            >
-              Sign in
-            </button>
-          </Text>
+          <div className="mt-6 rounded-xl border border-white/70 bg-white/35 backdrop-blur-md px-4 py-3 text-center shadow-sm">
+            <Text size="sm" className="text-gray-700">
+              Already using Stockly?
+              <button
+                onClick={() => navigate("/login")}
+                className="ml-2 font-semibold text-emerald-700 hover:text-emerald-800 hover:underline hover:cursor-pointer"
+              >
+                Sign in instead
+              </button>
+            </Text>
+          </div>
         </div>
       </div>
     </Layout>
