@@ -6,6 +6,12 @@ This project implements a complete **authentication flow** with **JWT-based auth
 
 ---
 
+## ☁️ Live Deployment
+
+Stockly is fully deployed on **Render**, with both the frontend and backend running seamlessly. Post-install scripts were added to ensure smooth startup, and the app is fully functional with authentication, inventory management, and shopping list features.  
+
+Experience the app live here: 🔗 [Stockly Live on Render](https://stockly-4d9o.onrender.com/)
+
 ## 🚀 Key Features
 
 **Authentication & Security**
