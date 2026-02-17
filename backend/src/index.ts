@@ -5,12 +5,18 @@ import connectDB from "./config/db";
 import authRoutes from "./routes/authRoutes";
 import inventoryRoutes from "./routes/inventoryRoutes";
 import shoppingRoutes from "./routes/shoppingRoutes";
+import path from "path";
+
+console.log("SERVER FILE STARTED");
 
 dotenv.config();
 
 connectDB(); //Connect to MongoDB
 
 const app = express();
+
+// Serve static files from frontend/dist
+app.use(express.static(path.join(__dirname, "../../frontend/dist")));
 
 //Middleware
 app.use(cors()); //help in communicating to frontend which runs on a different port.
@@ -25,6 +31,11 @@ app.use("/api/inventory", inventoryRoutes);
 
 //Shopping Routes for shopping list related operations.
 app.use("/api/shopping", shoppingRoutes);
+
+// 🔥 SPA fallback (MUST be last)
+app.get(/^(?!\/api).*/, (req, res) => {
+  res.sendFile(path.join(__dirname, "../../frontend/dist/index.html"));
+});
 
 // test route
 app.get("/", (req, res) => {

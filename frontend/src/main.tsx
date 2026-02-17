@@ -7,11 +7,12 @@ import { BrowserRouter } from "react-router-dom";
 import { MantineProvider } from "@mantine/core";
 import { store } from "../src/store/store.ts";
 import { Provider } from "react-redux";
+import "@mantine/dates/styles.css";
 import { Notifications } from "@mantine/notifications";
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    <MantineProvider>
+    <MantineProvider theme={{}}>
       <Notifications
         position="top-right"
         zIndex={9999}
@@ -27,9 +28,7 @@ createRoot(document.getElementById("root")!).render(
       />
       <BrowserRouter>
         <Provider store={store}>
-          <div className="min-h-screen bg-white/20 backdrop-blur-lg">
-            <App />
-          </div>
+          <App />
         </Provider>
       </BrowserRouter>
     </MantineProvider>

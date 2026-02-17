@@ -5,8 +5,7 @@
 @layer base {
   body {
     font-family: "Inter", sans-serif !important;
-    background-color: #f8efef !important;
-    background-image: url(/images/bg.jpg);
+    background-color: #f8ebeb !important;
     background-size: cover;
     background-position: center;
   }
@@ -88,7 +87,14 @@
 
 /* ─── Text Effects ─────────────────────── */
 .shimmer-text {
-  background: linear-gradient(90deg, #111, #16a34a, #111);
+  background: linear-gradient(
+    90deg,
+    #0f0f0f 0%,
+    #5f0606 30%,
+    #028220 50%,
+    #5f0606 70%,
+    #0f0f0f 100%
+  );
   background-size: 200% auto;
   background-clip: text;
   -webkit-background-clip: text;

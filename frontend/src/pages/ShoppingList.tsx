@@ -13,7 +13,6 @@ import {
   NumberInput,
   Stack,
   ThemeIcon,
-  Progress,
   Loader,
   Alert,
 } from "@mantine/core";

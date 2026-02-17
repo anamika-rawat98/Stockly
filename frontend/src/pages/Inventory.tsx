@@ -32,6 +32,8 @@ import {
   IconCheck,
   IconAlertCircle,
   IconShoppingCart,
+  IconMinus,
+  IconPencil,
 } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -49,7 +51,7 @@ import { clearError } from "../store/slice/inventorySlice";
 function getExpiryStatus(expiryDate?: string | Date) {
   if (!expiryDate) return { label: "No expiry", color: "gray", days: Infinity };
   const today = new Date();
-  const expiry = new Date(expiryDate); // ✅ new Date() handles both string and Date
+  const expiry = new Date(expiryDate);
   const daysLeft = Math.ceil(
     (expiry.getTime() - today.getTime()) / (1000 * 60 * 60 * 24),
   );
@@ -77,7 +79,17 @@ export default function Inventory() {
   const [modalOpened, { open, close }] = useDisclosure(false);
   const [editItem, setEditItem] = useState<InventoryResponseData | null>(null);
 
-  // ─── Shopping Modal state ─────────────────────────────────
+  // ─── Inline quantity update ───────────────────────────────
+  const [updatingId, setUpdatingId] = useState<string | null>(null);
+
+  // ─── Quantity modal (clickable number) ───────────────────
+  const [qtyModalOpened, { open: openQtyModal, close: closeQtyModal }] =
+    useDisclosure(false);
+  const [qtyItem, setQtyItem] = useState<InventoryResponseData | null>(null);
+  const [newQtyValue, setNewQtyValue] = useState<number>(0);
+  const [qtyLoading, setQtyLoading] = useState(false);
+
+  // ─── Shopping modal ───────────────────────────────────────
   const [shoppingModalOpened, { open: openShopping, close: closeShopping }] =
     useDisclosure(false);
   const [shoppingItem, setShoppingItem] =
@@ -85,7 +97,37 @@ export default function Inventory() {
   const [shoppingQty, setShoppingQty] = useState<number>(1);
   const [shoppingLoading, setShoppingLoading] = useState(false);
 
+  // ─── Edit form (no quantity) ──────────────────────────────
   const form = useForm({
+    initialValues: {
+      name: "",
+      unit: "",
+      expiryDate: null as DateValue,
+      minQuantity: 1,
+    },
+    onValuesChange: () => {
+      if (error) dispatch(clearError());
+    },
+    validate: {
+      name: (value) => {
+        if (!value.trim()) return "Item name is required";
+        if (/\d/.test(value)) return "Name cannot contain numbers";
+        return null;
+      },
+      unit: (value) => {
+        if (!value.trim()) return "Unit is required";
+        if (/\d/.test(value)) return "Unit cannot contain numbers";
+        return null;
+      },
+      minQuantity: (value) => {
+        if (value <= 0) return "Min quantity must be greater than 0";
+        return null;
+      },
+    },
+  });
+
+  // ─── Add form (has quantity) ──────────────────────────────
+  const addForm = useForm({
     initialValues: {
       name: "",
       quantity: 1,
@@ -111,10 +153,8 @@ export default function Inventory() {
         if (value <= 0) return "Quantity must be greater than 0";
         return null;
       },
-      minQuantity: (value, values) => {
+      minQuantity: (value) => {
         if (value <= 0) return "Min quantity must be greater than 0";
-        if (value >= values.quantity)
-          return "Min quantity must be less than quantity";
         return null;
       },
     },
@@ -144,15 +184,116 @@ export default function Inventory() {
   const handleCloseModal = () => {
     if (error) dispatch(clearError());
     form.reset();
+    addForm.reset();
     setEditItem(null);
     close();
   };
 
+  // ─── Inline ±1 quick update ───────────────────────────────
+  const handleQuantityChange = async (
+    item: InventoryResponseData,
+    delta: number,
+  ) => {
+    const newQty = Math.max(0, item.quantity + delta);
+    setUpdatingId(item._id);
+    try {
+      const result = await dispatch(
+        updateInventoryThunk({
+          id: item._id,
+          data: {
+            name: item.name,
+            unit: item.unit,
+            minQuantity: item.minQuantity,
+            expiryDate: toDateString(item.expiryDate as DateValue),
+            quantity: newQty,
+          },
+        }),
+      );
+      if (updateInventoryThunk.fulfilled.match(result)) {
+        if (newQty === 0) {
+          notifications.show({
+            title: "Out of stock!",
+            message: `${item.name} is now out of stock`,
+            color: "red",
+            icon: <IconAlertTriangle size={16} />,
+          });
+        } else if (newQty <= item.minQuantity && delta < 0) {
+          notifications.show({
+            title: "Low stock",
+            message: `${item.name} is running low — ${newQty} ${item.unit} left`,
+            color: "orange",
+            icon: <IconAlertTriangle size={16} />,
+          });
+        }
+        dispatch(getInventoryThunk());
+      }
+    } finally {
+      setUpdatingId(null);
+    }
+  };
+
+  // ─── Open quantity modal (click on number) ────────────────
+  const handleOpenQtyModal = (item: InventoryResponseData) => {
+    setQtyItem(item);
+    setNewQtyValue(item.quantity);
+    openQtyModal();
+  };
+
+  // ─── Confirm quantity modal update ────────────────────────
+  const handleConfirmQtyUpdate = async () => {
+    if (!qtyItem) return;
+    setQtyLoading(true);
+    try {
+      const result = await dispatch(
+        updateInventoryThunk({
+          id: qtyItem._id,
+          data: {
+            name: qtyItem.name,
+            unit: qtyItem.unit,
+            minQuantity: qtyItem.minQuantity,
+            expiryDate: toDateString(qtyItem.expiryDate as DateValue),
+            quantity: Math.max(0, newQtyValue),
+          },
+        }),
+      );
+      if (updateInventoryThunk.fulfilled.match(result)) {
+        const finalQty = Math.max(0, newQtyValue);
+        if (finalQty === 0) {
+          notifications.show({
+            title: "Out of stock!",
+            message: `${qtyItem.name} is now out of stock`,
+            color: "red",
+            icon: <IconAlertTriangle size={16} />,
+          });
+        } else if (finalQty <= qtyItem.minQuantity) {
+          notifications.show({
+            title: "Low stock",
+            message: `${qtyItem.name} is running low — ${finalQty} ${qtyItem.unit} left`,
+            color: "orange",
+            icon: <IconAlertTriangle size={16} />,
+          });
+        } else {
+          notifications.show({
+            title: "Quantity updated",
+            message: `${qtyItem.name}: ${finalQty} ${qtyItem.unit}`,
+            color: "green",
+            icon: <IconCheck size={16} />,
+          });
+        }
+        dispatch(getInventoryThunk());
+        closeQtyModal();
+        setQtyItem(null);
+      }
+    } finally {
+      setQtyLoading(false);
+    }
+  };
+
+  // ─── Edit item details ────────────────────────────────────
   const handleEdit = (item: InventoryResponseData) => {
     setEditItem(item);
     form.setValues({
       name: item.name,
-      quantity: item.quantity,
       unit: item.unit,
       expiryDate: item.expiryDate ? new Date(item.expiryDate) : null,
       minQuantity: item.minQuantity,
@@ -174,18 +315,18 @@ export default function Inventory() {
   };
 
   const handleSave = async () => {
-    const validation = form.validate();
-    if (validation.hasErrors) return;
-
-    const data: InventoryData = {
-      name: form.values.name,
-      quantity: Number(form.values.quantity),
-      unit: form.values.unit,
-      minQuantity: Number(form.values.minQuantity),
-      expiryDate: (toDateString(form.values.expiryDate) ?? "") as string,
-    };
-
     if (editItem) {
+      const validation = form.validate();
+      if (validation.hasErrors) return;
+
+      const data: InventoryData = {
+        name: form.values.name,
+        quantity: editItem.quantity, // keep existing quantity
+        unit: form.values.unit,
+        minQuantity: Number(form.values.minQuantity),
+        expiryDate: (toDateString(form.values.expiryDate) ?? "") as string,
+      };
+
       const result = await dispatch(
         updateInventoryThunk({ id: editItem._id, data }),
       );
@@ -200,11 +341,22 @@ export default function Inventory() {
         handleCloseModal();
       }
     } else {
+      const validation = addForm.validate();
+      if (validation.hasErrors) return;
+
+      const data: InventoryData = {
+        name: addForm.values.name,
+        quantity: Number(addForm.values.quantity),
+        unit: addForm.values.unit,
+        minQuantity: Number(addForm.values.minQuantity),
+        expiryDate: (toDateString(addForm.values.expiryDate) ?? "") as string,
+      };
+
       const result = await dispatch(addInventoryThunk(data));
       if (addInventoryThunk.fulfilled.match(result)) {
         notifications.show({
           title: "Item Added",
-          message: `${form.values.name} was added to your pantry!`,
+          message: `${addForm.values.name} was added to your pantry!`,
           color: "green",
           icon: <IconCheck size={16} />,
         });
@@ -214,10 +366,10 @@ export default function Inventory() {
     }
   };
 
-  // ─── Add to Shopping List ─────────────────────────────────
+  // ─── Shopping list ────────────────────────────────────────
   const handleOpenShopping = (item: InventoryResponseData) => {
     setShoppingItem(item);
-    setShoppingQty(1); // default quantity to 1
+    setShoppingQty(1);
     openShopping();
   };
 
@@ -227,8 +379,8 @@ export default function Inventory() {
     try {
       const result = await dispatch(
         addShoppingThunk({
-          inventoryItemId: shoppingItem._id, // ✅ backend uses this to find item
-          quantity: shoppingQty, // ✅ backend uses this as the buy quantity
+          inventoryItemId: shoppingItem._id,
+          quantity: shoppingQty,
         }),
       );
       if (addShoppingThunk.fulfilled.match(result)) {
@@ -238,7 +390,7 @@ export default function Inventory() {
           color: "orange",
           icon: <IconShoppingCart size={16} />,
         });
-        dispatch(getInventoryThunk()); // refresh inventory since item is deleted from it
+        dispatch(getInventoryThunk());
         closeShopping();
         setShoppingItem(null);
       }
@@ -246,6 +398,14 @@ export default function Inventory() {
       setShoppingLoading(false);
     }
   };
+
+  // live preview color in qty modal
+  const remainingColor =
+    newQtyValue === 0
+      ? "#dc2626"
+      : newQtyValue <= (qtyItem?.minQuantity ?? 0)
+        ? "#ea580c"
+        : "#16a34a";
 
   return (
     <Layout>
@@ -269,7 +429,7 @@ export default function Inventory() {
           <Alert
             icon={<IconAlertCircle size={16} />}
             color="red"
-            variant="light"
+            variant="filled"
             className="mb-6"
           >
             {error}
@@ -297,7 +457,6 @@ export default function Inventory() {
               </div>
             </Group>
           </Card>
-
           <Card
             shadow="xs"
             radius="md"
@@ -317,7 +476,6 @@ export default function Inventory() {
               </div>
             </Group>
           </Card>
-
           <Card
             shadow="xs"
             radius="md"
@@ -358,6 +516,7 @@ export default function Inventory() {
               color="dark"
               onClick={() => {
                 setEditItem(null);
+                addForm.reset();
                 form.reset();
                 if (error) dispatch(clearError());
                 open();
@@ -410,6 +569,7 @@ export default function Inventory() {
                     (item.quantity / (item.minQuantity * 2)) * 100,
                     100,
                   );
+                  const isUpdating = updatingId === item._id;
 
                   return (
                     <Table.Tr key={item._id}>
@@ -418,19 +578,73 @@ export default function Inventory() {
                           {item.name}
                         </Text>
                       </Table.Td>
+
+                      {/* ✅ Hybrid quantity column */}
                       <Table.Td>
                         <div>
-                          <Text size="sm" fw={600} className="text-gray-800">
-                            {item.quantity} {item.unit}
-                          </Text>
+                          <Group gap={4} mb={4} align="center">
+                            {/* Quick -1 */}
+                            <Tooltip label="Decrease by 1">
+                              <ActionIcon
+                                size="xs"
+                                variant="light"
+                                color="red"
+                                radius="xl"
+                                disabled={item.quantity === 0 || isUpdating}
+                                onClick={() => handleQuantityChange(item, -1)}
+                              >
+                                <IconMinus size={10} />
+                              </ActionIcon>
+                            </Tooltip>
+
+                            {/* ✅ Clickable quantity number — opens modal */}
+                            <Tooltip label="Click to set exact amount">
+                              <button
+                                onClick={() => handleOpenQtyModal(item)}
+                                disabled={isUpdating}
+                                className="flex items-center gap-1 px-2 py-0.5 rounded-md text-sm font-600 text-gray-800 hover:bg-gray-100 transition-colors cursor-pointer border border-transparent hover:border-gray-200 min-w-16 justify-center"
+                              >
+                                {isUpdating ? (
+                                  <Text size="xs" c="dimmed">
+                                    ...
+                                  </Text>
+                                ) : (
+                                  <>
+                                    <Text size="sm" fw={600}>
+                                      {item.quantity} {item.unit}
+                                    </Text>
+                                    <IconPencil
+                                      size={10}
+                                      className="text-gray-400"
+                                    />
+                                  </>
+                                )}
+                              </button>
+                            </Tooltip>
+
+                            {/* Quick +1 */}
+                            <Tooltip label="Increase by 1">
+                              <ActionIcon
+                                size="xs"
+                                variant="light"
+                                color="green"
+                                radius="xl"
+                                disabled={isUpdating}
+                                onClick={() => handleQuantityChange(item, +1)}
+                              >
+                                <IconPlus size={10} />
+                              </ActionIcon>
+                            </Tooltip>
+                          </Group>
                           <Progress
                             value={stockPercent}
                             color={stock.color}
                             size="xs"
-                            className="mt-1 w-24"
+                            className="w-28"
                           />
                         </div>
                       </Table.Td>
+
                       <Table.Td>
                         <Badge color={stock.color} variant="light" size="sm">
                           {stock.label}
@@ -443,7 +657,6 @@ export default function Inventory() {
                       </Table.Td>
                       <Table.Td>
                         <Group gap="xs">
-                          {/* ✅ Now wired up with onClick! */}
                           {(stock.label === "Low stock" ||
                             stock.label === "Out of stock" ||
                             expiry.label === "Expired") && (
@@ -457,7 +670,7 @@ export default function Inventory() {
                               </ActionIcon>
                             </Tooltip>
                           )}
-                          <Tooltip label="Edit">
+                          <Tooltip label="Edit details">
                             <ActionIcon
                               variant="light"
                               color="blue"
@@ -500,13 +713,95 @@ export default function Inventory() {
         )}
       </Container>
 
+      {/* ─── Quantity Update Modal ──────────────────────────── */}
+      <Modal
+        opened={qtyModalOpened}
+        onClose={() => {
+          closeQtyModal();
+          setQtyItem(null);
+        }}
+        title={
+          <Text fw={600} size="lg">
+            Update Quantity
+          </Text>
+        }
+        overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}
+        centered
+        size="xs"
+      >
+        <Stack gap="md">
+          <Group justify="space-between">
+            <Text size="sm" className="text-gray-500">
+              Item
+            </Text>
+            <Text size="sm" fw={600} className="text-gray-800">
+              {qtyItem?.name}
+            </Text>
+          </Group>
+          <Group justify="space-between">
+            <Text size="sm" className="text-gray-500">
+              Current stock
+            </Text>
+            <Text size="sm" fw={600} className="text-gray-800">
+              {qtyItem?.quantity} {qtyItem?.unit}
+            </Text>
+          </Group>
+
+          <NumberInput
+            label={`New quantity (${qtyItem?.unit})`}
+            min={0}
+            value={newQtyValue}
+            onChange={(val) => setNewQtyValue(Number(val) ?? 0)}
+            autoFocus
+          />
+
+          {/* ✅ Live preview of what will remain */}
+          <div className="rounded-lg px-3 py-2 bg-gray-50 border border-gray-200">
+            <Group justify="space-between">
+              <Text size="xs" className="text-gray-500">
+                After update
+              </Text>
+              <Text size="sm" fw={700} style={{ color: remainingColor }}>
+                {Math.max(0, newQtyValue)} {qtyItem?.unit}
+                {newQtyValue === 0 && " — Out of stock"}
+                {newQtyValue > 0 &&
+                  newQtyValue <= (qtyItem?.minQuantity ?? 0) &&
+                  " — Low stock"}
+                {newQtyValue > (qtyItem?.minQuantity ?? 0) && " — In stock"}
+              </Text>
+            </Group>
+          </div>
+
+          <Group justify="flex-end" mt="xs">
+            <Button
+              variant="subtle"
+              color="gray"
+              onClick={() => {
+                closeQtyModal();
+                setQtyItem(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="dark"
+              leftSection={<IconCheck size={16} />}
+              onClick={handleConfirmQtyUpdate}
+              loading={qtyLoading}
+            >
+              Update
+            </Button>
+          </Group>
+        </Stack>
+      </Modal>
+
       {/* ─── Add / Edit Modal ──────────────────────────────── */}
       <Modal
         opened={modalOpened}
         onClose={handleCloseModal}
         title={
           <Text fw={600} size="lg">
-            {editItem ? "Edit Item" : "Add New Item"}
+            {editItem ? "Edit Item Details" : "Add New Item"}
           </Text>
         }
         overlayProps={{ backgroundOpacity: 0.55, blur: 3 }}
@@ -523,36 +818,71 @@ export default function Inventory() {
               {error}
             </Alert>
           )}
-          <TextInput
-            label="Item Name"
-            placeholder="e.g. Basmati Rice"
-            {...form.getInputProps("name")}
-            required
-          />
-          <TextInput
-            label="Unit"
-            placeholder="e.g. kg, cans, bottles"
-            {...form.getInputProps("unit")}
-            required
-          />
-          <Group grow>
-            <NumberInput
-              label="Quantity"
-              min={0}
-              {...form.getInputProps("quantity")}
-            />
-            <NumberInput
-              label="Min Quantity (alert threshold)"
-              min={1}
-              {...form.getInputProps("minQuantity")}
-            />
-          </Group>
-          <DateInput
-            label="Expiry Date"
-            placeholder="Pick a date"
-            value={form.values.expiryDate}
-            onChange={(val) => form.setFieldValue("expiryDate", val)}
-          />
+
+          {editItem ? (
+            /* ✅ Edit */
+            <>
+              <TextInput
+                label="Item Name"
+                placeholder="e.g. Basmati Rice"
+                {...form.getInputProps("name")}
+                required
+              />
+              <TextInput
+                label="Unit"
+                placeholder="e.g. kg, cans, bottles"
+                {...form.getInputProps("unit")}
+                required
+              />
+              <NumberInput
+                label="Min Quantity Alert"
+                description="You'll see a low stock warning below this number"
+                min={1}
+                {...form.getInputProps("minQuantity")}
+              />
+              <DateInput
+                label="Expiry Date"
+                placeholder="Pick a date"
+                value={form.values.expiryDate}
+                onChange={(val) => form.setFieldValue("expiryDate", val)}
+              />
+            </>
+          ) : (
+            /* ✅ Add — has quantity */
+            <>
+              <TextInput
+                label="Item Name"
+                placeholder="e.g. Basmati Rice"
+                {...addForm.getInputProps("name")}
+                required
+              />
+              <TextInput
+                label="Unit"
+                placeholder="e.g. kg, cans, bottles"
+                {...addForm.getInputProps("unit")}
+                required
+              />
+              <Group grow>
+                <NumberInput
+                  label="Quantity"
+                  min={1}
+                  {...addForm.getInputProps("quantity")}
+                />
+                <NumberInput
+                  label="Min Quantity Alert"
+                  min={1}
+                  {...addForm.getInputProps("minQuantity")}
+                />
+              </Group>
+              <DateInput
+                label="Expiry Date"
+                placeholder="Pick a date"
+                value={addForm.values.expiryDate}
+                onChange={(val) => addForm.setFieldValue("expiryDate", val)}
+              />
+            </>
+          )}
+
           <Group justify="flex-end" mt="md">
             <Button variant="subtle" color="gray" onClick={handleCloseModal}>
               Cancel
@@ -587,7 +917,7 @@ export default function Inventory() {
       >
         <Stack gap="sm">
           <Text size="sm" className="text-gray-600">
-            How much <strong>{shoppingItem?.name}</strong> do you need to buy?
+            How much <strong>{shoppingItem?.name}</strong> do you need to buy?{" "}
             (Current stock:{" "}
             <strong>
               {shoppingItem?.quantity} {shoppingItem?.unit}

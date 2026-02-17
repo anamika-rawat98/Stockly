@@ -9,7 +9,6 @@ import {
 } from "@mantine/core";
 import { useDisclosure } from "@mantine/hooks";
 import { Link, useNavigate } from "react-router-dom";
-import icon from "../assets/images/icon.svg";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
 import { logoutThunk } from "../store/thunks/userThunk";
 import {
@@ -38,7 +37,11 @@ function Header() {
         <Link to="/" className="no-underline">
           <Group gap="xs">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl">
-              <img src={icon} alt="Stockly Icon" className="w-9 h-9" />
+              <img
+                src="/images/icon.svg"
+                alt="Stockly Icon"
+                className="w-9 h-9"
+              />
             </div>
             <Text size="xl" fw={700} c="white">
               Stockly
@@ -188,7 +191,11 @@ function Header() {
         title={
           <Group gap="xs">
             <div className="w-10 h-10 rounded-lg flex items-center justify-center text-xl">
-              <img src={icon} alt="Stockly Icon" className="w-9 h-9" />
+              <img
+                src="/images/icon.svg"
+                alt="Stockly Icon"
+                className="w-9 h-9"
+              />
             </div>
             <Text fw={700}>Stockly</Text>
           </Group>

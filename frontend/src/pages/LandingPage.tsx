@@ -84,7 +84,7 @@ export default function LandingPage() {
         <section className="relative min-h-[80vh] flex items-center">
           <div className="dot-grid absolute inset-0 opacity-40" />
 
-          <Container size="lg" className="relative z-10 pb-12 pt-24">
+          <Container size="lg" className="relative z-10 pt-24">
             <div className="grid lg:grid-cols-[auto_auto] gap-4 items-center">
               {/* ───── LEFT COLUMN ───── */}
               <div className="max-w-2xl mx-auto lg:mx-0 text-center lg:text-left">
@@ -110,7 +110,7 @@ export default function LandingPage() {
                   organized.
                 </h1>
 
-                <p className="hero-sub text-xl text-green-950 mb-10 leading-relaxed font-light">
+                <p className="hero-sub text-xl text-green-950 mb-10 leading-relaxed font-normal">
                   Track ingredients, catch expiry dates early, and never run out
                   of what matters. Stockly keeps your kitchen running smoothly.
                 </p>
@@ -222,9 +222,9 @@ export default function LandingPage() {
         </section>
 
         {/* FEATURES */}
-        <section id="features" className="py-8">
+        <section id="features" className="mb-10">
           <Container size="lg">
-            <div className="text-center mb-16">
+            <div className="text-center my-12">
               <Badge color="black" variant="light" size="lg" className="mb-4">
                 Features
               </Badge>
@@ -232,9 +232,7 @@ export default function LandingPage() {
                 className="text-5xl font-bold text-gray-900 mb-4"
                 style={{ letterSpacing: "-0.03em" }}
               >
-                Everything you need,
-                <br />
-                nothing you don't.
+                Features That Make Life Easier
               </h2>
             </div>
 
@@ -271,9 +269,9 @@ export default function LandingPage() {
         </section>
 
         {/*  ABOUT */}
-        <section id="about" className="py-12 bg-white/50! backdrop-blur-sm!">
+        <section id="about" className="py-8 bg-white/50! backdrop-blur-sm!">
           <Container size="lg">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-24">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-16 items-center mb-16">
               <div>
                 <Badge color="teal" variant="light" size="lg" className="mb-6">
                   About Stockly
@@ -310,7 +308,7 @@ export default function LandingPage() {
                   ].map((item, i) => (
                     <div key={i} className="flex items-center gap-3">
                       <div
-                        className="w-5 h-5 rounded-full flex items-center justify-center flex-shrink-0"
+                        className="w-5 h-5 rounded-full flex items-center justify-center shrink-0"
                         style={{ background: "#f0fdf4" }}
                       >
                         <IconCheck size={12} color="#16a34a" />
