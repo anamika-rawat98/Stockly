@@ -1,15 +1,16 @@
+import dotenv from "dotenv";
+dotenv.config();
+
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
 import connectDB from "./config/db";
 import authRoutes from "./routes/authRoutes";
 import inventoryRoutes from "./routes/inventoryRoutes";
 import shoppingRoutes from "./routes/shoppingRoutes";
 import path from "path";
+import receiptRoutes from "./routes/receiptRoutes";
 
 console.log("SERVER FILE STARTED");
-
-dotenv.config();
 
 connectDB(); //Connect to MongoDB
 
@@ -31,6 +32,8 @@ app.use("/api/inventory", inventoryRoutes);
 
 //Shopping Routes for shopping list related operations.
 app.use("/api/shopping", shoppingRoutes);
+
+app.use("/api/receipt", receiptRoutes);
 
 // 🔥 SPA fallback (MUST be last)
 app.get(/^(?!\/api).*/, (req, res) => {

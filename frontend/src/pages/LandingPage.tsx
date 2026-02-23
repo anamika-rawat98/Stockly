@@ -14,7 +14,7 @@ import {
   IconChartBar,
   IconBell,
   IconCalendar,
-  IconShoppingCart,
+  IconReceipt,
   IconTrendingUp,
   IconLeaf,
   IconStar,
@@ -28,12 +28,12 @@ export default function LandingPage() {
 
   const features = [
     {
-      icon: <IconShoppingCart size={22} />,
-      color: "#16a34a",
-      bg: "#dcfce7",
-      title: "Smart Inventory",
+      icon: <IconReceipt size={22} />,
+      color: "#0f766e",
+      bg: "#ccfbf1",
+      title: "Scan Receipts Instantly",
       description:
-        "Keep track of all your pantry items in one organized place with easy add, edit, and delete functions.",
+        "Upload a grocery receipt and Stockly auto-extracts items so you can add them to inventory in seconds.",
     },
     {
       icon: <IconCalendar size={22} />,
@@ -111,11 +111,30 @@ export default function LandingPage() {
                 </h1>
 
                 <p className="hero-sub text-xl text-green-950 mb-10 leading-relaxed font-normal">
-                  Track ingredients, catch expiry dates early, and never run out
-                  of what matters. Stockly keeps your kitchen running smoothly.
+                  Scan receipts, auto-add items to inventory, catch expiry dates
+                  early, and never run out of what matters.
                 </p>
 
                 <div className="hero-cta flex flex-wrap gap-4 items-center justify-center lg:justify-start">
+                  {isAuthenticated && (
+                    <Button
+                      size="lg"
+                      component={Link}
+                      to="/inventory?scan=receipt"
+                      className="cta-btn"
+                      rightSection={<IconArrowRight size={16} />}
+                      style={{
+                        background: "#0f766e",
+                        border: "none",
+                        borderRadius: "12px",
+                        fontWeight: 600,
+                        paddingLeft: "2rem",
+                        paddingRight: "2rem",
+                      }}
+                    >
+                      Scan Receipt Now
+                    </Button>
+                  )}
                   {!isAuthenticated && (
                     <Button
                       size="lg"

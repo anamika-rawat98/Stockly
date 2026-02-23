@@ -18,9 +18,10 @@ import {
   Alert,
 } from "@mantine/core";
 import { useForm } from "@mantine/form";
-import { useDisclosure } from "@mantine/hooks";
+import { useDisclosure, useMediaQuery } from "@mantine/hooks";
 import { DateInput, type DateValue } from "@mantine/dates";
 import { notifications } from "@mantine/notifications";
+import { useSearchParams } from "react-router-dom";
 import {
   IconSearch,
   IconPlus,
@@ -34,6 +35,7 @@ import {
   IconShoppingCart,
   IconMinus,
   IconPencil,
+  IconReceipt,
 } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -47,6 +49,9 @@ import { addShoppingThunk } from "../store/thunks/shoppingThunk";
 import type { InventoryResponseData, InventoryData } from "../types/types";
 import Layout from "../components/Layout";
 import { clearError } from "../store/slice/inventorySlice";
+import ReceiptScanner, {
+  type ScannedItem,
+} from "../components/ReceiptScanner";
 
 function getExpiryStatus(expiryDate?: string | Date) {
   if (!expiryDate) return { label: "No expiry", color: "gray", days: Infinity };
@@ -96,6 +101,20 @@ export default function Inventory() {
     useState<InventoryResponseData | null>(null);
   const [shoppingQty, setShoppingQty] = useState<number>(1);
   const [shoppingLoading, setShoppingLoading] = useState(false);
+
+  // ─── Receipt Scanner Modal ────────────────────────────────
+  const [
+    receiptModalOpened,
+    { open: openReceiptModal, close: closeReceiptModal },
+  ] = useDisclosure(false);
+  const receiptFullScreen = useMediaQuery("(max-width: 68em)");
+  const [receiptHasResults, setReceiptHasResults] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  const handleCloseReceiptModal = () => {
+    setReceiptHasResults(false);
+    closeReceiptModal();
+  };
 
   // ─── Edit form (no quantity) ──────────────────────────────
   const form = useForm({
@@ -163,6 +182,13 @@ export default function Inventory() {
   useEffect(() => {
     dispatch(getInventoryThunk());
   }, [dispatch]);
+
+  useEffect(() => {
+    if (searchParams.get("scan") === "receipt") {
+      openReceiptModal();
+      setSearchParams({}, { replace: true });
+    }
+  }, [openReceiptModal, searchParams, setSearchParams]);
 
   const filtered = items.filter((item) =>
     item?.name?.toLowerCase().includes(search.toLowerCase()),
@@ -321,7 +347,7 @@ export default function Inventory() {
 
       const data: InventoryData = {
         name: form.values.name,
-        quantity: editItem.quantity, // keep existing quantity
+        quantity: editItem.quantity,
         unit: form.values.unit,
         minQuantity: Number(form.values.minQuantity),
         expiryDate: (toDateString(form.values.expiryDate) ?? "") as string,
@@ -396,6 +422,37 @@ export default function Inventory() {
       }
     } finally {
       setShoppingLoading(false);
+    }
+  };
+
+  // ─── Receipt Scanner confirm ──────────────────────────────
+  const handleItemsConfirmed = async (scannedItems: ScannedItem[]) => {
+    let successCount = 0;
+
+    for (const item of scannedItems) {
+      const result = await dispatch(
+        addInventoryThunk({
+          name: item.name,
+          quantity: item.quantity,
+          unit: item.unit,
+          minQuantity: item.minQuantity,
+          expiryDate: item.expiryDate ?? "",
+        }),
+      );
+      if (addInventoryThunk.fulfilled.match(result)) {
+        successCount++;
+      }
+    }
+
+    if (successCount > 0) {
+      notifications.show({
+        title: "Items Added!",
+        message: `${successCount} item${successCount > 1 ? "s" : ""} added to your pantry from receipt 🧾`,
+        color: "green",
+        icon: <IconCheck size={16} />,
+      });
+      dispatch(getInventoryThunk());
+      handleCloseReceiptModal();
     }
   };
 
@@ -504,7 +561,7 @@ export default function Inventory() {
           </Card>
         </div>
 
-        {/* Search + Add */}
+        {/* Search + Scan Receipt + Add Item */}
         <Card
           shadow="xs"
           radius="md"
@@ -518,19 +575,31 @@ export default function Inventory() {
               onChange={(e) => setSearch(e.target.value)}
               className="flex-1 min-w-50"
             />
-            <Button
-              leftSection={<IconPlus size={16} />}
-              color="dark"
-              onClick={() => {
-                setEditItem(null);
-                addForm.reset();
-                form.reset();
-                if (error) dispatch(clearError());
-                open();
-              }}
-            >
-              Add Item
-            </Button>
+            <Group gap="sm">
+              {/* ─── NEW: Scan Receipt Button ─── */}
+              <Button
+                leftSection={<IconReceipt size={16} />}
+                color="teal"
+                variant="light"
+                onClick={openReceiptModal}
+              >
+                Scan Receipt
+              </Button>
+
+              <Button
+                leftSection={<IconPlus size={16} />}
+                color="dark"
+                onClick={() => {
+                  setEditItem(null);
+                  addForm.reset();
+                  form.reset();
+                  if (error) dispatch(clearError());
+                  open();
+                }}
+              >
+                Add Item
+              </Button>
+            </Group>
           </Group>
         </Card>
 
@@ -586,11 +655,10 @@ export default function Inventory() {
                         </Text>
                       </Table.Td>
 
-                      {/* ✅ Hybrid quantity column */}
+                      {/* Hybrid quantity column */}
                       <Table.Td>
                         <div>
                           <Group gap={4} mb={4} align="center">
-                            {/* Quick -1 */}
                             <Tooltip label="Decrease by 1">
                               <ActionIcon
                                 size="xs"
@@ -604,7 +672,6 @@ export default function Inventory() {
                               </ActionIcon>
                             </Tooltip>
 
-                            {/* ✅ Clickable quantity number — opens modal */}
                             <Tooltip label="Click to set exact amount">
                               <button
                                 onClick={() => handleOpenQtyModal(item)}
@@ -629,7 +696,6 @@ export default function Inventory() {
                               </button>
                             </Tooltip>
 
-                            {/* Quick +1 */}
                             <Tooltip label="Increase by 1">
                               <ActionIcon
                                 size="xs"
@@ -763,7 +829,6 @@ export default function Inventory() {
             autoFocus
           />
 
-          {/* ✅ Live preview of what will remain */}
           <div className="rounded-lg px-3 py-2 bg-gray-50 border border-gray-200">
             <Group justify="space-between">
               <Text size="xs" className="text-gray-500">
@@ -829,7 +894,6 @@ export default function Inventory() {
           )}
 
           {editItem ? (
-            /* ✅ Edit */
             <>
               <TextInput
                 label="Item Name"
@@ -857,7 +921,6 @@ export default function Inventory() {
               />
             </>
           ) : (
-            /* ✅ Add — has quantity */
             <>
               <TextInput
                 label="Item Name"
@@ -961,6 +1024,36 @@ export default function Inventory() {
             </Button>
           </Group>
         </Stack>
+      </Modal>
+
+      {/* ─── Receipt Scanner Modal ─────────────────────────── */}
+      <Modal
+        opened={receiptModalOpened}
+        onClose={handleCloseReceiptModal}
+        title={
+          <Text fw={600} size="lg">
+            Scan Receipt 🧾
+          </Text>
+        }
+        overlayProps={{ backgroundOpacity: 0.35, blur: 6 }}
+        classNames={glassModalClassNames}
+        fullScreen={receiptFullScreen && receiptHasResults}
+        centered={!(receiptFullScreen && receiptHasResults)}
+        size={receiptHasResults ? "calc(100vw - 3rem)" : "sm"}
+        yOffset={receiptHasResults ? "2vh" : "12vh"}
+        styles={
+          receiptHasResults
+            ? {
+                content: { minHeight: "92vh" },
+                body: { minHeight: "calc(92vh - 72px)" },
+              }
+            : undefined
+        }
+      >
+        <ReceiptScanner
+          onItemsConfirmed={handleItemsConfirmed}
+          onResultsStateChange={setReceiptHasResults}
+        />
       </Modal>
     </Layout>
   );

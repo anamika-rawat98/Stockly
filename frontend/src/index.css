@@ -120,6 +120,71 @@
   background: transparent !important;
 }
 
+.receipt-preview-panel {
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.78) 0%,
+    rgba(242, 248, 255, 0.64) 100%
+  ) !important;
+}
+
+.receipt-upload-panel {
+  border-color: rgba(96, 165, 250, 0.35) !important;
+  background:
+    radial-gradient(circle at 8% 10%, rgba(191, 219, 254, 0.38), transparent 45%),
+    radial-gradient(circle at 92% 95%, rgba(167, 243, 208, 0.28), transparent 42%),
+    linear-gradient(145deg, rgba(255, 255, 255, 0.88), rgba(245, 251, 255, 0.72)) !important;
+}
+
+.receipt-upload-button {
+  box-shadow: 0 10px 24px rgba(37, 99, 235, 0.25);
+}
+
+.receipt-upload-meta {
+  border-color: rgba(125, 211, 252, 0.55) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(240, 249, 255, 0.92) 0%,
+    rgba(239, 246, 255, 0.72) 100%
+  ) !important;
+}
+
+.receipt-preview-image {
+  width: 100%;
+  max-height: 70vh;
+  object-fit: contain;
+  border: 1px solid rgba(148, 163, 184, 0.35);
+  background: linear-gradient(180deg, #ffffff 0%, #f8fafc 100%);
+}
+
+.receipt-preview-empty {
+  min-height: 280px;
+  border: 1px dashed rgba(148, 163, 184, 0.55);
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: rgba(248, 250, 252, 0.7);
+}
+
+.receipt-items-panel {
+  background: linear-gradient(
+    155deg,
+    rgba(255, 255, 255, 0.9) 0%,
+    rgba(250, 252, 255, 0.7) 100%
+  ) !important;
+}
+
+.receipt-item-card {
+  border-color: rgba(148, 163, 184, 0.35) !important;
+  background: rgba(255, 255, 255, 0.8) !important;
+}
+
+.receipt-items-table th,
+.receipt-items-table td {
+  white-space: nowrap;
+  vertical-align: middle;
+}
+
 /* ─── Animations ───────────────────────── */
 @keyframes float {
   0%,
