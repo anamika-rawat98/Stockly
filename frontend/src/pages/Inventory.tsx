@@ -49,9 +49,7 @@ import { addShoppingThunk } from "../store/thunks/shoppingThunk";
 import type { InventoryResponseData, InventoryData } from "../types/types";
 import Layout from "../components/Layout";
 import { clearError } from "../store/slice/inventorySlice";
-import ReceiptScanner, {
-  type ScannedItem,
-} from "../components/ReceiptScanner";
+import ReceiptScanner, { type ScannedItem } from "../components/ReceiptScanner";
 
 function getExpiryStatus(expiryDate?: string | Date) {
   if (!expiryDate) return { label: "No expiry", color: "gray", days: Infinity };
@@ -474,19 +472,42 @@ export default function Inventory() {
   return (
     <Layout>
       <Container size="xl" className="py-8">
-        <div className="mb-8 mt-4 text-center">
-          <Group justify="center" gap="xs" mb={4}>
-            <div className="p-2 bg-white/50 backdrop-blur-md rounded-lg">
-              <IconPackage size={20} className="text-blue-600" />
+        <Card
+          shadow="xs"
+          radius="lg"
+          className="ai-scan-hero border border-teal-200 mb-6"
+        >
+          <Group justify="space-between" align="center" wrap="wrap" gap="md">
+            <div>
+              <Group gap="xs" mb={8}>
+                <Badge color="teal" variant="light">
+                  Feature
+                </Badge>
+                <Badge color="blue" variant="light">
+                  AI Receipt Scanner
+                </Badge>
+              </Group>
+              <Title order={3} className="text-gray-900">
+                Add items to inventory from a receipt image in seconds
+              </Title>
+              <Text className="text-gray-600 mt-1">
+                Upload a grocery receipt photo and the AI Receipt Scanner
+                auto-detects items, quantities, units, and expiry details for
+                quick review.
+              </Text>
             </div>
-            <Title order={1} className="text-2xl font-extrabold">
-              Pantry Inventory
-            </Title>
+
+            <Button
+              leftSection={<IconReceipt size={17} />}
+              size="md"
+              radius="xl"
+              color="teal"
+              onClick={openReceiptModal}
+            >
+              Scan with AI
+            </Button>
           </Group>
-          <Text className="text-gray-500 text-sm font-medium">
-            Track your ingredients, quantities and expiry dates
-          </Text>
-        </div>
+        </Card>
 
         {/* Global Error Alert */}
         {error && !modalOpened && (

@@ -66,7 +66,7 @@ export default function Signup() {
     if (error) dispatch(clearError());
     try {
       await dispatch(registerThunk(values)).unwrap();
-      navigate("/inventory");
+      navigate("/");
     } catch (error) {}
   };
 

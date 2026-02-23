@@ -35,7 +35,7 @@ export default function Login() {
     e.preventDefault();
     try {
       await dispatch(loginThunk(formData)).unwrap();
-      navigate("/inventory");
+      navigate("/");
     } catch (error) {}
   };
 

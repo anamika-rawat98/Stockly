@@ -2,7 +2,8 @@ import axios from "axios";
 
 //Create the baseURL so that we do not have to write the server name again and again in every call.
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL,
+  // Fallback to same-origin API when VITE_API_URL is not provided in deployment.
+  baseURL: import.meta.env.VITE_API_URL || "",
 });
 
 //Taking the token from the local stoprage and adding it in the header of every request.

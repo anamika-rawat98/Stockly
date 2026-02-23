@@ -29,6 +29,7 @@ import {
   IconAlertTriangle,
   IconAlertCircle,
   IconEdit,
+  IconSearch,
 } from "@tabler/icons-react";
 import { useState, useEffect } from "react";
 import { useAppDispatch, useAppSelector } from "../store/hooks";
@@ -57,6 +58,7 @@ export default function ShoppingList() {
     null,
   );
   const [expiryDate, setExpiryDate] = useState<DateValue>(null);
+  const [search, setSearch] = useState("");
 
   const addForm = useForm({
     initialValues: { name: "", quantity: 1, unit: "" },
@@ -244,6 +246,14 @@ export default function ShoppingList() {
 
   const autoAdded = items.filter((i) => i.isAutoAdded);
   const manual = items.filter((i) => !i.isAutoAdded);
+  const normalizedSearch = search.trim().toLowerCase();
+  const filteredAutoAdded = autoAdded.filter((item) =>
+    item.name.toLowerCase().includes(normalizedSearch),
+  );
+  const filteredManual = manual.filter((item) =>
+    item.name.toLowerCase().includes(normalizedSearch),
+  );
+  const visibleCount = filteredAutoAdded.length + filteredManual.length;
 
   const glassModalClassNames = {
     content: "glass-modal-content",
@@ -255,7 +265,7 @@ export default function ShoppingList() {
   // ─── Item Row ─────────────────────────────────────────────
   const ItemRow = ({ item }: { item: ShoppingResponseData }) => (
     <div
-      className={`flex items-center justify-between p-3 rounded-lg border transition-all glass-list-row ${
+      className={`shopping-row flex items-center justify-between p-3 rounded-xl border transition-all glass-list-row ${
         item.isAutoAdded
           ? "glass-list-row-warn border-orange-200"
           : "glass-list-row-neutral border-gray-200"
@@ -280,7 +290,7 @@ export default function ShoppingList() {
 
       <div className="flex-1 px-3">
         <Group gap="xs" align="center">
-          <Text fw={500} size="sm" className="text-gray-800">
+          <Text fw={600} size="sm" className="shopping-row-name text-gray-800">
             {item.name}
           </Text>
           {item.isAutoAdded && (
@@ -296,7 +306,7 @@ export default function ShoppingList() {
             </Tooltip>
           )}
         </Group>
-        <Text size="xs" className="text-gray-400">
+        <Text size="xs" className="text-gray-500">
           {item.quantity} {item.unit}
         </Text>
       </div>
@@ -328,20 +338,44 @@ export default function ShoppingList() {
 
   return (
     <Layout>
-      <Container size="md" className="py-8">
-        <div className="mb-8 mt-4 text-center">
-          <Group justify="center" gap="xs" mb={4}>
-            <div className="p-2 bg-blue-50 rounded-lg">
-              <IconShoppingCart size={20} className="text-blue-600" />
+      <Container size="lg" className="py-8">
+        <Card
+          shadow="xs"
+          radius="lg"
+          className="shopping-hero-card border border-sky-200 mb-6"
+        >
+          <Group justify="space-between" align="center" wrap="wrap" gap="md">
+            <div>
+              <Group gap="xs" mb={6}>
+                <ThemeIcon color="blue" variant="light" radius="xl" size="md">
+                  <IconShoppingCart size={16} />
+                </ThemeIcon>
+                <Badge color="blue" variant="light">
+                  Shopping Dashboard
+                </Badge>
+              </Group>
+              <Title order={2} className="text-gray-900">
+                Plan smarter grocery runs
+              </Title>
+              <Text className="text-gray-600 mt-1">
+                Your smart shopping companion — track what to buy and restock
+                your pantry in one tap.
+              </Text>
             </div>
-            <Title order={1} className="text-2xl font-extrabold">
-              Shopping List
-            </Title>
+            <Button
+              color="dark"
+              size="md"
+              leftSection={<IconPlus size={14} />}
+              onClick={() => {
+                addForm.reset();
+                if (error) dispatch(clearError());
+                openAdd();
+              }}
+            >
+              Add Item
+            </Button>
           </Group>
-          <Text className="text-gray-500 text-sm font-medium">
-            Row stock items are added automatically
-          </Text>
-        </div>
+        </Card>
 
         {/* Global Error Alert — only when no modal is open */}
         {error && !addModalOpened && !editModalOpened && (
@@ -357,60 +391,85 @@ export default function ShoppingList() {
         )}
 
         {/* Stats Row */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-6">
           <Card
             shadow="xs"
             radius="md"
-            className="glass-card border border-gray-200 text-center"
+            className="glass-card border border-gray-200"
           >
-            <Text size="xl" fw={700} className="text-gray-900">
-              {items.length}
-            </Text>
-            <Text size="xs" className="text-gray-500">
-              Total
-            </Text>
+            <Group justify="space-between">
+              <div>
+                <Text size="xs" className="text-gray-500">
+                  Total Items
+                </Text>
+                <Text size="xl" fw={700} className="text-gray-900">
+                  {items.length}
+                </Text>
+              </div>
+              <ThemeIcon color="gray" variant="light" radius="xl" size="lg">
+                <IconShoppingCart size={16} />
+              </ThemeIcon>
+            </Group>
           </Card>
           <Card
             shadow="xs"
             radius="md"
-            className="glass-card border border-orange-200 text-center"
+            className="glass-card border border-orange-200"
           >
-            <Text size="xl" fw={700} className="text-orange-700">
-              {autoAdded.length}
-            </Text>
-            <Text size="xs" className="text-orange-500">
-              Low Stock
-            </Text>
+            <Group justify="space-between">
+              <div>
+                <Text size="xs" className="text-orange-500">
+                  Low Stock
+                </Text>
+                <Text size="xl" fw={700} className="text-orange-700">
+                  {autoAdded.length}
+                </Text>
+              </div>
+              <ThemeIcon color="orange" variant="light" radius="xl" size="lg">
+                <IconAlertTriangle size={16} />
+              </ThemeIcon>
+            </Group>
           </Card>
           <Card
             shadow="xs"
             radius="md"
-            className="glass-card border border-blue-200 text-center"
+            className="glass-card border border-blue-200"
           >
-            <Text size="xl" fw={700} className="text-blue-700">
-              {manual.length}
-            </Text>
-            <Text size="xs" className="text-blue-500">
-              Manual
-            </Text>
+            <Group justify="space-between">
+              <div>
+                <Text size="xs" className="text-blue-500">
+                  Manual
+                </Text>
+                <Text size="xl" fw={700} className="text-blue-700">
+                  {manual.length}
+                </Text>
+              </div>
+              <ThemeIcon color="blue" variant="light" radius="xl" size="lg">
+                <IconEdit size={16} />
+              </ThemeIcon>
+            </Group>
           </Card>
         </div>
 
         {/* Action Bar */}
-        <Group justify="flex-end" className="mb-4">
-          <Button
-            color="dark"
-            size="md"
-            leftSection={<IconPlus size={14} />}
-            onClick={() => {
-              addForm.reset();
-              if (error) dispatch(clearError());
-              openAdd();
-            }}
-          >
-            Add Item
-          </Button>
-        </Group>
+        <Card
+          shadow="xs"
+          radius="md"
+          className="glass-card border border-gray-200 mb-4"
+        >
+          <Group justify="space-between" wrap="wrap" gap="sm">
+            <TextInput
+              placeholder="Search shopping items..."
+              leftSection={<IconSearch size={16} />}
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="flex-1 min-w-50"
+            />
+            <Badge color="gray" variant="light">
+              Showing {visibleCount} item{visibleCount === 1 ? "" : "s"}
+            </Badge>
+          </Group>
+        </Card>
 
         {/* Loading */}
         {isLoading && (
@@ -420,7 +479,7 @@ export default function ShoppingList() {
         )}
 
         {/* Low Stock Items */}
-        {!isLoading && autoAdded.length > 0 && (
+        {!isLoading && filteredAutoAdded.length > 0 && (
           <Card
             shadow="xs"
             radius="md"
@@ -433,9 +492,12 @@ export default function ShoppingList() {
               <Text fw={600} size="sm" className="text-orange-700">
                 From Inventory (Low Stock / Expired)
               </Text>
+              <Badge color="orange" variant="light" size="sm">
+                {filteredAutoAdded.length}
+              </Badge>
             </Group>
             <Stack gap="xs">
-              {autoAdded.map((item) => (
+              {filteredAutoAdded.map((item) => (
                 <ItemRow key={item._id} item={item} />
               ))}
             </Stack>
@@ -443,14 +505,25 @@ export default function ShoppingList() {
         )}
 
         {/* Manual Items */}
-        {!isLoading && manual.length > 0 && (
+        {!isLoading && filteredManual.length > 0 && (
           <Card
             shadow="xs"
             radius="md"
             className="glass-card border border-gray-200 mb-10!"
           >
+            <Group mb="md">
+              <ThemeIcon color="blue" variant="light" size="sm">
+                <IconEdit size={14} />
+              </ThemeIcon>
+              <Text fw={600} size="sm" className="text-blue-700">
+                Manual Items
+              </Text>
+              <Badge color="blue" variant="light" size="sm">
+                {filteredManual.length}
+              </Badge>
+            </Group>
             <Stack gap="xs">
-              {manual.map((item) => (
+              {filteredManual.map((item) => (
                 <ItemRow key={item._id} item={item} />
               ))}
             </Stack>
@@ -458,7 +531,7 @@ export default function ShoppingList() {
         )}
 
         {/* Empty State */}
-        {!isLoading && items.length === 0 && (
+        {!isLoading && visibleCount === 0 && (
           <Card
             shadow="xs"
             radius="md"

@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import axios from "axios";
 import {
   ActionIcon,
   Alert,
@@ -20,6 +19,7 @@ import {
   NumberInput,
 } from "@mantine/core";
 import { DateInput } from "@mantine/dates";
+import { scanReceiptApi } from "../api/receipt";
 import {
   IconAlertCircle,
   IconCheck,
@@ -88,13 +88,9 @@ const ReceiptScanner = ({
     formData.append("receipt", file);
 
     try {
-      const response = await axios.post(
-        `${import.meta.env.VITE_API_URL}/api/receipt/scan`,
-        formData,
-        { headers: { "Content-Type": "multipart/form-data" } },
-      );
+      const response = await scanReceiptApi(formData);
 
-      const prefilled: ScannedItem[] = response.data.items.map(
+      const prefilled: ScannedItem[] = response.items.map(
         (item: Partial<ScannedItem>) => ({
           name: item.name ?? "",
           quantity: item.quantity ?? 1,
@@ -105,12 +101,11 @@ const ReceiptScanner = ({
       );
 
       setItems(prefilled);
-      setReceiptUrl(response.data.receiptUrl ?? null);
+      setReceiptUrl(response.receiptUrl ?? null);
     } catch (err) {
-      const apiError = axios.isAxiosError(err)
-        ? (err.response?.data?.error ?? err.response?.data?.message)
-        : null;
-      setError(apiError || "Failed to scan receipt. Please try again.");
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to scan receipt. Please try again.";
+      setError(errorMessage);
       console.error(err);
     } finally {
       setScanning(false);

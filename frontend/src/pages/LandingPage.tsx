@@ -31,9 +31,9 @@ export default function LandingPage() {
       icon: <IconReceipt size={22} />,
       color: "#0f766e",
       bg: "#ccfbf1",
-      title: "Scan Receipts Instantly",
+      title: "AI Receipt Scanner",
       description:
-        "Upload a grocery receipt and Stockly auto-extracts items so you can add them to inventory in seconds.",
+        "Upload a grocery receipt and the AI Receipt Scanner auto-extracts items so you can add them to inventory in seconds.",
     },
     {
       icon: <IconCalendar size={22} />,
@@ -111,8 +111,8 @@ export default function LandingPage() {
                 </h1>
 
                 <p className="hero-sub text-xl text-green-950 mb-10 leading-relaxed font-normal">
-                  Scan receipts, auto-add items to inventory, catch expiry dates
-                  early, and never run out of what matters.
+                  Use AI Receipt Scanner to auto-add items to inventory, catch
+                  expiry dates early, and never run out of what matters.
                 </p>
 
                 <div className="hero-cta flex flex-wrap gap-4 items-center justify-center lg:justify-start">
@@ -132,7 +132,7 @@ export default function LandingPage() {
                         paddingRight: "2rem",
                       }}
                     >
-                      Scan Receipt Now
+                      Scan with AI
                     </Button>
                   )}
                   {!isAuthenticated && (
